@@ -20,8 +20,11 @@ MODEL = "gemini-2.5-flash"
 def get_client():
     # Using the API key from secrets or environment
     import os
-    from dotenv import load_dotenv
-    load_dotenv()
+    try:
+        from dotenv import load_dotenv
+        load_dotenv()
+    except ImportError:
+        pass  # python-dotenv not installed (e.g. Streamlit Cloud); secrets come from st.secrets
     api_key = st.secrets.get("GEMINI_API_KEY") or os.environ.get("GEMINI_API_KEY")
     return genai.Client(api_key=api_key)
 

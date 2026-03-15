@@ -2,3 +2,4 @@
 supabase
 google-genai
 streamlit-option-menu
+python-dotenv

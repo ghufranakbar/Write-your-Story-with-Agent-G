@@ -191,7 +191,7 @@ html, body, [class*="css"] {{
 [data-testid="stSidebar"] > div {{
     background: var(--sidebar) !important;
 }}
-[data-testid="stSidebar"] * {{
+[data-testid="stSidebar"] *:not([data-testid="stIconMaterial"]) {{
     font-family: 'Inter', -apple-system, sans-serif !important;
 }}
 [data-testid="stSidebar"] [data-testid="stVerticalBlock"],
@@ -318,10 +318,16 @@ h3, h4 {{
     color: var(--tx-0) !important;
     font-weight: 600 !important;
 }}
-p, li, div {{
+p, li, div:not([data-testid="stIconMaterial"]) {{
     font-family: 'Crimson Pro', serif !important;
     font-size: 1.08rem !important;
     line-height: 1.75 !important;
+}}
+/* Preserve Material Symbols font for Streamlit's built-in icons */
+[data-testid="stIconMaterial"], span[translate="no"] {{
+    font-family: 'Material Symbols Rounded', sans-serif !important;
+    font-size: inherit !important;
+    line-height: inherit !important;
 }}
 
 /* Page header — icon badge + title + subtitle */
@@ -730,28 +736,33 @@ p, li, div {{
     border-top: 1px solid var(--brd-1);
 }}
 .auth-footer .stButton > button {{
-      background: transparent !important;
-      border: 1px solid rgba(130, 110, 70, 0.4) !important;
-      color: #d8c8a8 !important;
-      font-family: 'Inter', sans-serif !important;
-      font-size: 0.88rem !important;
-      font-weight: 500 !important;
-      border-radius: 8px !important;
-      padding: 10px 16px !important;
-      height: 40px !important;
-      width: 100% !important;
-      display: flex !important;
-      align-items: center !important;
-      justify-content: center !important;
-      gap: 6px !important;
-      cursor: pointer !important;
-      box-shadow: 0 1px 3px rgba(0,0,0,0.04) !important;
-      transition: all 0.2s;
-  }}
-  .auth-footer .stButton > button:hover {{
-      background: rgba(60, 60, 65, 0.2) !important;
-      border-color: rgba(180, 160, 110, 0.6) !important;
-      color: #d8c8a8 !important;
+    background: var(--bg-2) !important;
+    border: 1px solid var(--brd-2) !important;
+    color: var(--tx-1) !important;
+    font-family: 'Inter', sans-serif !important;
+    font-size: 0.82rem !important;
+    font-weight: 500 !important;
+    border-radius: 8px !important;
+    padding: 0.45rem 1rem !important;
+    width: 100% !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 6px !important;
+    cursor: pointer !important;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.04) !important;
+    transition: all 0.2s var(--ease) !important;
+}}
+.auth-footer .stButton > button:hover {{
+    background: var(--accent-bg) !important;
+    border-color: var(--accent) !important;
+    color: var(--accent) !important;
+    transform: none !important;
+}}
+
+/* ── Form Inputs ─────────────────────────────── */
+.stTextInput input, .stTextArea textarea {{
+    background: var(--input-bg) !important;
     border: 1px solid var(--brd-1) !important;
     color: var(--tx-0) !important;
     border-radius: var(--r-sm) !important;
@@ -765,17 +776,14 @@ p, li, div {{
     box-shadow: 0 0 0 3px var(--accent-bg) !important;
     outline: none !important;
 }}
-
 [data-testid="stTextInput"] div[data-baseweb="input"],
 [data-testid="stTextInput"] div[data-baseweb="base-input"],
 [data-testid="stTextArea"] div[data-baseweb="textarea"],
 [data-testid="stTextArea"] div[data-baseweb="base-input"] {{
     background-color: transparent !important;
 }}
-
 .stTextInput > div > div > input, .stTextArea > div > textarea {{
     background-color: transparent !important;
-
     background: var(--input-bg) !important;
     color: var(--tx-0) !important;
 }}
@@ -1078,9 +1086,17 @@ def handle_oauth_callback():
             if res.session:
                 store_session(res.session)
                 st.query_params.clear()
+                # Clear cached OAuth URL so a fresh one is generated next time
+                st.session_state.pop("google_auth_url", None)
                 st.rerun()
         except Exception as e:
-            st.error(f"OAuth error: {e}")
+            # Clear stale OAuth state so the user can retry cleanly
+            st.query_params.clear()
+            st.session_state.pop("google_auth_url", None)
+            if "code challenge" in str(e).lower() or "code verifier" in str(e).lower():
+                st.warning("Session expired. Please sign in again.")
+            else:
+                st.error(f"OAuth error: {e}")
 
 
 def _get_google_oauth_url() -> str:
@@ -1123,6 +1139,11 @@ def _render_google_button(key: str = "google_login"):
     auth_url = st.session_state["google_auth_url"]
 
     # We use components.html to escape Streamlit's native router intercepting links
+    # Colors adapt to current theme
+    btn_bg = T['gBtnBg']
+    btn_brd = T['gBtnBrd']
+    btn_tx = T['gBtnTx']
+    btn_hov = T['gBtnHov']
     components.html(f'''
     <style>
         body {{ margin: 0; padding: 0; display: flex; justify-content: center; background: transparent !important; margin-top: 5px; }}
@@ -1131,9 +1152,9 @@ def _render_google_button(key: str = "google_login"):
             align-items: center;
             justify-content: center;
             text-decoration: none;
-            background: transparent;
-            border: 1px solid rgba(130, 110, 70, 0.4);
-            color: #d8c8a8;
+            background: {btn_bg};
+            border: 1px solid {btn_brd};
+            color: {btn_tx};
             font-family: 'Inter', sans-serif;
             font-size: 0.88rem;
             font-weight: 500;
@@ -1146,8 +1167,8 @@ def _render_google_button(key: str = "google_login"):
             transition: all 0.2s;
         }}
         .btn:hover {{
-            background: rgba(60, 60, 65, 0.2);
-            border-color: rgba(180, 160, 110, 0.6);
+            background: {btn_hov};
+            border-color: {'#c0c0c0' if not IS_DARK else 'rgba(180,160,110,0.28)'};
         }}
     </style>
     <a class="btn" href="{auth_url}" target="_blank">
@@ -1188,34 +1209,13 @@ def auth_page():
         with tab_signup:
             _signup_form()
 
-        # Theme button — real clickable button
-        st.markdown('''<style>
-        [data-testid="stVerticalBlock"] [data-testid="stButton"] > button[kind="secondary"] {
-            background: transparent !important;
-            border: 1px solid rgba(130, 110, 70, 0.4) !important;
-            color: #d8c8a8 !important;
-            font-family: 'Inter', sans-serif !important;
-            font-size: 0.88rem !important;
-            font-weight: 500 !important;
-            border-radius: 8px !important;
-            padding: 5px 16px !important;
-            height: 44px !important;
-            width: 100% !important;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.04) !important;
-            transition: all 0.2s !important;
-            margin-top: 5px !important;
-        }
-        [data-testid="stVerticalBlock"] [data-testid="stButton"] > button[kind="secondary"]:hover {
-            background: rgba(60, 60, 65, 0.2) !important;
-            border-color: rgba(180, 160, 110, 0.6) !important;
-            color: #d8c8a8 !important;
-        }
-        </style>''', unsafe_allow_html=True)
-        
+        # Theme button — real clickable button (uses .auth-footer CSS from main stylesheet)
+        st.markdown('<div class="auth-footer">', unsafe_allow_html=True)
         theme_label = "Switch to Dark Mode" if not IS_DARK else "Switch to Light Mode"
         if st.button(f"{'🌙' if not IS_DARK else '☀️'}  {theme_label}", key="auth_theme_btn", use_container_width=True):
             st.session_state.theme = "dark" if not IS_DARK else "light"
             st.rerun()
+        st.markdown('</div>', unsafe_allow_html=True)
 
 
 def _login_form():

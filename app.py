@@ -5,10 +5,52 @@ Narrate your life. Read it as epic fantasy. Dual light/dark theme. Responsive.
 
 import streamlit as st
 import streamlit.components.v1 as components
-from supabase import create_client, Client
+from supabase import create_client, Client, ClientOptions
 from streamlit_option_menu import option_menu
 import database as db
 import agents
+import json
+import os
+
+class DiskStorage:
+    def __init__(self):
+        self.path = "supabase_auth_cache.json"
+        
+    def get_item(self, key: str):
+        try:
+            if os.path.exists(self.path):
+                with open(self.path, "r") as f:
+                    return json.load(f).get(key)
+        except Exception:
+            pass
+        return None
+        
+    def set_item(self, key: str, value: str):
+        data = {}
+        try:
+            if os.path.exists(self.path):
+                with open(self.path, "r") as f:
+                    data = json.load(f)
+        except Exception:
+            pass
+        data[key] = value
+        try:
+            with open(self.path, "w") as f:
+                json.dump(data, f)
+        except Exception:
+            pass
+            
+    def remove_item(self, key: str):
+        try:
+            if os.path.exists(self.path):
+                with open(self.path, "r") as f:
+                    data = json.load(f)
+                if key in data:
+                    del data[key]
+                    with open(self.path, "w") as f:
+                        json.dump(data, f)
+        except Exception:
+            pass
 
 # ─── Page Setup ───────────────────────────────────────────────────────────────
 
@@ -991,12 +1033,20 @@ document.addEventListener("mouseleave", () => {
 @st.cache_resource
 def get_base_client() -> Client:
     """Unauthenticated Supabase client for auth flows only."""
-    return create_client(st.secrets["SUPABASE_URL"], st.secrets["SUPABASE_KEY"])
+    return create_client(
+        st.secrets["SUPABASE_URL"], 
+        st.secrets["SUPABASE_KEY"],
+        options=ClientOptions(storage=DiskStorage())
+    )
 
 
 def get_authed_client(access_token: str, refresh_token: str) -> Client:
     """Supabase client scoped to the user's session (respects RLS)."""
-    client = create_client(st.secrets["SUPABASE_URL"], st.secrets["SUPABASE_KEY"])
+    client = create_client(
+        st.secrets["SUPABASE_URL"], 
+        st.secrets["SUPABASE_KEY"],
+        options=ClientOptions(storage=DiskStorage())
+    )
     client.auth.set_session(access_token, refresh_token)
     return client
 

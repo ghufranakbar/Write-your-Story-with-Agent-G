@@ -674,29 +674,33 @@ p, li, div {{
 }}
 
 /* Google OAuth button — Streamlit button with G logo via ::before */
-.g-btn-wrap .stButton > button {{
-    background: {T['gBtnBg']} !important;
-    border: 1px solid {T['gBtnBrd']} !important;
-    color: {T['gBtnTx']} !important;
-    font-family: 'Inter', sans-serif !important;
-    font-size: 0.88rem !important;
-    font-weight: 500 !important;
-    border-radius: 8px !important;
-    padding: 10px 16px !important;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.04) !important;
-    transition: all 0.2s var(--ease) !important;
-}}
-.g-btn-wrap .stButton > button::before {{
-    content: '';
-    display: inline-block;
-    width: 18px; height: 18px;
-    margin-right: 10px;
-    flex-shrink: 0;
-    vertical-align: middle;
-    background: url("data:image/svg+xml,%3Csvg viewBox='0 0 24 24' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z' fill='%234285F4'/%3E%3Cpath d='M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z' fill='%2334A853'/%3E%3Cpath d='M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z' fill='%23FBBC05'/%3E%3Cpath d='M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z' fill='%23EA4335'/%3E%3C/svg%3E") no-repeat center/contain;
-}}
-.g-btn-wrap .stButton > button:hover {{
-    background: {T['gBtnHov']} !important;
+  .g-btn-wrap .g-auth-link {{
+      display: flex !important;
+      align-items: center !important;
+      justify-content: center !important;
+      text-decoration: none !important;
+      background: {T['gBtnBg']} !important;
+      border: 1px solid {T['gBtnBrd']} !important;
+      color: {T['gBtnTx']} !important;
+      font-family: 'Inter', sans-serif !important;
+      font-size: 0.88rem !important;
+      font-weight: 500 !important;
+      border-radius: 8px !important;
+      padding: 10px 16px !important;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.04) !important;
+      transition: all 0.2s var(--ease) !important;
+      width: 100% !important;
+  }}
+  .g-btn-wrap .g-auth-link::before {{
+      content: '';
+      display: inline-block;
+      width: 18px; height: 18px;
+      margin-right: 10px;
+      flex-shrink: 0;
+      vertical-align: middle;
+      background: url("data:image/svg+xml,%3Csvg viewBox='0 0 24 24' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z' fill='%234285F4'/%3E%3Cpath d='M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z' fill='%2334A853'/%3E%3Cpath d='M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z' fill='%23FBBC05'/%3E%3Cpath d='M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z' fill='%23EA4335'/%3E%3C/svg%3E") no-repeat center/contain;
+  }}
+  .g-btn-wrap .g-auth-link:hover {{
     box-shadow: 0 2px 8px rgba(0,0,0,0.08) !important;
     border-color: {'#c0c0c0' if not IS_DARK else 'rgba(180,160,110,0.28)'} !important;
     transform: none !important;
@@ -1042,31 +1046,32 @@ def handle_oauth_callback():
             st.error(f"OAuth error: {e}")
 
 
-def _start_google_oauth():
-    """Redirect browser to Google OAuth via Supabase."""
+def _get_google_oauth_url() -> str:
+    """Get the Google OAuth URL via Supabase."""
     try:
         app_url = st.secrets.get("APP_URL", "http://localhost:8501")
         res = get_base_client().auth.sign_in_with_oauth({
             "provider": "google",
             "options": {"redirect_to": app_url},
         })
-        # Break out of the Streamlit Cloud iframe to prevent Google's clickjacking 403 error
-        st.components.v1.html(
-            f'<script>window.top.location.href = "{res.url}";</script>',
-            height=0
-        )
-        st.stop()
+        return res.url
     except Exception as e:
-        st.error(f"Could not start Google sign-in: {e}")
+        st.error(f"Could not prepare Google sign-in: {e}")
+        return "#"
 
 
 def _render_google_button(key: str = "google_login"):
-    """Google sign-in: styled Streamlit button with G logo injected via CSS ::before."""
-    # The wrapping div with class lets us target the button precisely
-    st.markdown('<div class="g-btn-wrap">', unsafe_allow_html=True)
-    if st.button("Continue with Google", key=key, use_container_width=True):
-        _start_google_oauth()
-    st.markdown('</div>', unsafe_allow_html=True)
+    """Google sign-in: styled anchor link that looks like a Streamlit button. Bypasses iframe issues entirely."""
+    auth_url = _get_google_oauth_url()
+    
+    # We use a raw HTML anchor link styled identically to the streamit button to escape iframe trapping
+    st.markdown(f'''
+    <div class="g-btn-wrap">
+        <a href="{auth_url}" target="_top" class="g-auth-link">
+            <span>Continue with Google</span>
+        </a>
+    </div>
+    ''', unsafe_allow_html=True)
 
 
 # ─── Auth Page ────────────────────────────────────────────────────────────────

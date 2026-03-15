@@ -65,7 +65,7 @@ THEMES = {
         shDeep="0 12px 40px rgba(0,0,0,0.09)",
         bookBg="linear-gradient(160deg,#faf7f1,#f4f0e8)",
         bookSpine="rgba(100,85,60,0.12)",
-        inputBg="transparent",
+        inputBg="#ffffff",
         gBtnBg="#ffffff", gBtnBrd="#dadce0", gBtnTx="#3c4043", gBtnHov="#f7f8f8",
         pCol="130,105,55", pAlpha="0.1",
         propBg="linear-gradient(180deg,#f8f5ef,#f2efe7)",
@@ -716,7 +716,7 @@ p, li, div {{
       margin-right: 10px;
       flex-shrink: 0;
       vertical-align: middle;
-      background: url("data:image/svg+xml,%3Csvg viewBox='0 0 24 24' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z' fill='%234285F4'/%3E%3Cpath d='M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z' fill='%2334A853'/%3E%3Cpath d='M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z' fill='%23FBBC05'/%3E%3Cpath d='M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z' fill='%23EA4335'/%3E%3C/svg%3E") no-repeat center/contain;
+      background: url(data:image/svg+xml,%3Csvg%20viewBox=%270%200%2024%2024%27%20xmlns=%27http://www.w3.org/2000/svg%27%3E%3Cpath%20d=%27M22.56%2012.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06%205.06%200%200%201-2.2%203.32v2.77h3.57c2.08-1.92%203.28-4.74%203.28-8.1z%27%20fill=%27%234285F4%27/%3E%3Cpath%20d=%27M12%2023c2.97%200%205.46-.98%207.28-2.66l-3.57-2.77c-.98.66-2.23%201.06-3.71%201.06-2.86%200-5.29-1.93-6.16-4.53H2.18v2.84C3.99%2020.53%207.7%2023%2012%2023z%27%20fill=%27%2334A853%27/%3E%3Cpath%20d=%27M5.84%2014.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43%208.55%201%2010.22%201%2012s.43%203.45%201.18%204.93l2.85-2.22.81-.62z%27%20fill=%27%23FBBC05%27/%3E%3Cpath%20d=%27M12%205.38c1.62%200%203.06.56%204.21%201.64l3.15-3.15C17.45%202.09%2014.97%201%2012%201%207.7%201%203.99%203.47%202.18%207.07l3.66%202.84c.87-2.6%203.3-4.53%206.16-4.53z%27%20fill=%27%23EA4335%27/%3E%3C/svg%3E) no-repeat center/contain;
   }}
   .g-btn-wrap .g-auth-link:hover {{
     box-shadow: 0 2px 8px rgba(0,0,0,0.08) !important;
@@ -765,7 +765,17 @@ p, li, div {{
     box-shadow: 0 0 0 3px var(--accent-bg) !important;
     outline: none !important;
 }}
+
+[data-testid="stTextInput"] div[data-baseweb="input"],
+[data-testid="stTextInput"] div[data-baseweb="base-input"],
+[data-testid="stTextArea"] div[data-baseweb="textarea"],
+[data-testid="stTextArea"] div[data-baseweb="base-input"] {{
+    background-color: transparent !important;
+}}
+
 .stTextInput > div > div > input, .stTextArea > div > textarea {{
+    background-color: transparent !important;
+
     background: var(--input-bg) !important;
     color: var(--tx-0) !important;
 }}
@@ -1141,7 +1151,7 @@ def _render_google_button(key: str = "google_login"):
         }}
     </style>
     <a class="btn" href="{auth_url}" target="_blank">
-       <span style="width: 18px; height: 18px; margin-right: 10px; display: inline-block; flex-shrink: 0; background: url("data:image/svg+xml,%3Csvg viewBox='0 0 24 24' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z' fill='%234285F4'/%3E%3Cpath d='M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z' fill='%2334A853'/%3E%3Cpath d='M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z' fill='%23FBBC05'/%3E%3Cpath d='M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z' fill='%23EA4335'/%3E%3C/svg%3E") no-repeat center/contain;"></span>
+       <span style="width: 18px; height: 18px; margin-right: 10px; display: inline-block; flex-shrink: 0; background: url(data:image/svg+xml,%3Csvg%20viewBox=%270%200%2024%2024%27%20xmlns=%27http://www.w3.org/2000/svg%27%3E%3Cpath%20d=%27M22.56%2012.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06%205.06%200%200%201-2.2%203.32v2.77h3.57c2.08-1.92%203.28-4.74%203.28-8.1z%27%20fill=%27%234285F4%27/%3E%3Cpath%20d=%27M12%2023c2.97%200%205.46-.98%207.28-2.66l-3.57-2.77c-.98.66-2.23%201.06-3.71%201.06-2.86%200-5.29-1.93-6.16-4.53H2.18v2.84C3.99%2020.53%207.7%2023%2012%2023z%27%20fill=%27%2334A853%27/%3E%3Cpath%20d=%27M5.84%2014.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43%208.55%201%2010.22%201%2012s.43%203.45%201.18%204.93l2.85-2.22.81-.62z%27%20fill=%27%23FBBC05%27/%3E%3Cpath%20d=%27M12%205.38c1.62%200%203.06.56%204.21%201.64l3.15-3.15C17.45%202.09%2014.97%201%2012%201%207.7%201%203.99%203.47%202.18%207.07l3.66%202.84c.87-2.6%203.3-4.53%206.16-4.53z%27%20fill=%27%23EA4335%27/%3E%3C/svg%3E) no-repeat center/contain;"></span>
        Continue with Google
     </a>
     ''', height=55)

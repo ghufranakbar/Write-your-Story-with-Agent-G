@@ -570,13 +570,11 @@ p, li, div {{
 }}
 
 /* ── Auth Page ────────────────────────────────── */
-.auth-outer {{
-    position: relative;
-    min-height: 85vh;
-    display: flex; align-items: center; justify-content: center;
-    overflow: hidden;
+/* Background orbs — fixed to viewport so they don't create layout space */
+.auth-orbs-bg {{
+    position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+    pointer-events: none; z-index: 0; overflow: hidden;
 }}
-/* Watercolor gradient orbs */
 @keyframes orb1 {{
     0%,100% {{ transform: translate(0,0) scale(1) rotate(0deg); }}
     33%     {{ transform: translate(30px,-20px) scale(1.1) rotate(5deg); }}
@@ -586,70 +584,46 @@ p, li, div {{
     0%,100% {{ transform: translate(0,0) scale(1) rotate(0deg); }}
     50%     {{ transform: translate(-25px,25px) scale(1.06) rotate(-4deg); }}
 }}
-@keyframes orb3 {{
-    0%,100% {{ transform: translate(0,0) scale(1); }}
-    40%     {{ transform: translate(20px,10px) scale(1.08); }}
-    80%     {{ transform: translate(-10px,-15px) scale(0.96); }}
-}}
-.auth-orb {{
+.auth-orbs-bg .orb {{
     position: absolute; border-radius: 50%;
-    filter: blur(90px); pointer-events: none; z-index: 0;
+    filter: blur(90px); pointer-events: none;
 }}
-.auth-orb-1 {{
-    width: 420px; height: 420px;
+.auth-orbs-bg .orb-1 {{
+    width: 380px; height: 380px;
     background: {T['authMesh1']};
-    top: -100px; right: -80px;
+    top: 5%; right: 10%;
     animation: orb1 20s ease-in-out infinite;
 }}
-.auth-orb-2 {{
-    width: 340px; height: 340px;
+.auth-orbs-bg .orb-2 {{
+    width: 300px; height: 300px;
     background: {T['authMesh2']};
-    bottom: -80px; left: -60px;
+    bottom: 10%; left: 5%;
     animation: orb2 24s ease-in-out infinite;
 }}
-.auth-orb-3 {{
-    width: 200px; height: 200px;
-    background: {'rgba(180,140,60,0.06)' if not IS_DARK else 'rgba(212,168,75,0.04)'};
-    top: 40%; left: 60%;
-    animation: orb3 16s ease-in-out infinite;
-}}
 
-/* Auth card — clean, warm, artful */
-.auth-card {{
-    position: relative; z-index: 1;
-    background: {'rgba(255,255,255,0.92)' if not IS_DARK else 'rgba(24,26,38,0.92)'};
-    backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px);
-    border: 1px solid {'rgba(90,75,50,0.1)' if not IS_DARK else 'rgba(180,160,110,0.1)'};
-    border-radius: 20px;
-    padding: 2.8rem 2.2rem 2rem 2.2rem;
-    width: 100%; max-width: 420px;
-    box-shadow: {'0 8px 32px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04)' if not IS_DARK else '0 12px 48px rgba(0,0,0,0.35)'};
-    animation: fadeUp 0.55s var(--ease) both;
-}}
-
-/* Top decorative line */
+/* Auth header — title block rendered as self-contained HTML */
 .auth-accent-line {{
     width: 40px; height: 3px;
     border-radius: 2px;
     background: linear-gradient(90deg, var(--accent), var(--accent-lt));
-    margin: 0 auto 1.6rem auto;
+    margin: 0 auto 1rem auto;
 }}
 .auth-title {{
     font-family: 'Playfair Display', serif !important;
-    font-size: 1.7rem !important;
+    font-size: 1.6rem !important;
     font-weight: 700 !important;
     color: var(--heading) !important;
     text-align: center;
-    margin-bottom: 0.15rem;
+    margin-bottom: 0.1rem;
     letter-spacing: -0.01em;
 }}
 .auth-sub {{
     font-family: 'Crimson Pro', serif !important;
     text-align: center;
     color: var(--tx-2) !important;
-    font-size: 0.92rem !important;
+    font-size: 0.88rem !important;
     font-style: italic;
-    margin-bottom: 1.4rem;
+    margin-bottom: 0.6rem;
 }}
 .auth-divider {{
     display: flex; align-items: center; gap: 10px;
@@ -692,10 +666,10 @@ p, li, div {{
     transform: none !important;
 }}
 
-/* Auth footer — theme toggle */
+/* Auth footer — theme toggle row */
 .auth-footer {{
     display: flex; align-items: center; justify-content: center; gap: 6px;
-    margin-top: 1.2rem; padding-top: 1rem;
+    margin-top: 0.6rem; padding-top: 0.6rem;
     border-top: 1px solid var(--brd-1);
     color: var(--tx-2);
     font-family: 'Inter', sans-serif;
@@ -1008,36 +982,40 @@ def auth_page():
     if is_logged_in():
         return
 
-    st.markdown(f'''
-    <div class="auth-outer">
-        <div class="auth-orb auth-orb-1"></div>
-        <div class="auth-orb auth-orb-2"></div>
-        <div class="auth-orb auth-orb-3"></div>
-        <div class="auth-card">
+    # Decorative background orbs (fixed, no layout impact)
+    st.markdown('''<div class="auth-orbs-bg">
+        <div class="orb orb-1"></div>
+        <div class="orb orb-2"></div>
+    </div>''', unsafe_allow_html=True)
+
+    # Center auth content in a narrow column
+    spacer_l, center, spacer_r = st.columns([1.3, 1, 1.3])
+
+    with center:
+        # Title block
+        st.markdown(f'''
             <div class="auth-accent-line"></div>
             <div class="auth-title">Life as Lore</div>
             <div class="auth-sub">Transform your life into an epic fantasy chronicle</div>
-    ''', unsafe_allow_html=True)
+        ''', unsafe_allow_html=True)
 
-    tab_login, tab_signup = st.tabs(["Sign In", "Create Account"])
+        tab_login, tab_signup = st.tabs(["Sign In", "Create Account"])
 
-    with tab_login:
-        _login_form()
+        with tab_login:
+            _login_form()
 
-    with tab_signup:
-        _signup_form()
+        with tab_signup:
+            _signup_form()
 
-    # Theme toggle inside card footer
-    st.markdown(f'''<div class="auth-footer">
-        {icon("moon" if not IS_DARK else "sun", T["tx2"], 13)}
-        <span style="margin-right:4px;">Appearance</span>
-    </div>''', unsafe_allow_html=True)
-    dark_val = st.toggle("Dark mode", value=IS_DARK, key="auth_theme", label_visibility="collapsed")
-    if dark_val != IS_DARK:
-        st.session_state.theme = "dark" if dark_val else "light"
-        st.rerun()
-
-    st.markdown('</div></div>', unsafe_allow_html=True)
+        # Theme toggle — real Streamlit widget, fully clickable
+        st.markdown(f'''<div class="auth-footer">
+            {icon("moon" if not IS_DARK else "sun", T["tx2"], 13)}
+            <span>Appearance</span>
+        </div>''', unsafe_allow_html=True)
+        dark_val = st.toggle("Dark mode", value=IS_DARK, key="auth_theme", label_visibility="collapsed")
+        if dark_val != IS_DARK:
+            st.session_state.theme = "dark" if dark_val else "light"
+            st.rerun()
 
 
 def _login_form():

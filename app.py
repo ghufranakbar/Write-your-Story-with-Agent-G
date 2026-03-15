@@ -569,81 +569,137 @@ p, li, div {{
     white-space: pre-line;
 }}
 
-/* ── Auth Card ───────────────────────────────── */
+/* ── Auth Page ────────────────────────────────── */
 .auth-outer {{
     position: relative;
-    min-height: 80vh;
+    min-height: 85vh;
     display: flex; align-items: center; justify-content: center;
     overflow: hidden;
 }}
-/* Animated watercolor blobs */
-@keyframes blob1 {{ 0%,100% {{ transform: translate(0,0) scale(1); }} 50% {{ transform: translate(25px,-18px) scale(1.08); }} }}
-@keyframes blob2 {{ 0%,100% {{ transform: translate(0,0) scale(1); }} 50% {{ transform: translate(-18px,22px) scale(1.05); }} }}
-.auth-blob1, .auth-blob2 {{
+/* Watercolor gradient orbs */
+@keyframes orb1 {{
+    0%,100% {{ transform: translate(0,0) scale(1) rotate(0deg); }}
+    33%     {{ transform: translate(30px,-20px) scale(1.1) rotate(5deg); }}
+    66%     {{ transform: translate(-15px,15px) scale(0.95) rotate(-3deg); }}
+}}
+@keyframes orb2 {{
+    0%,100% {{ transform: translate(0,0) scale(1) rotate(0deg); }}
+    50%     {{ transform: translate(-25px,25px) scale(1.06) rotate(-4deg); }}
+}}
+@keyframes orb3 {{
+    0%,100% {{ transform: translate(0,0) scale(1); }}
+    40%     {{ transform: translate(20px,10px) scale(1.08); }}
+    80%     {{ transform: translate(-10px,-15px) scale(0.96); }}
+}}
+.auth-orb {{
     position: absolute; border-radius: 50%;
-    filter: blur(80px);
-    pointer-events: none; z-index: 0;
+    filter: blur(90px); pointer-events: none; z-index: 0;
 }}
-.auth-blob1 {{
-    width: 380px; height: 380px;
+.auth-orb-1 {{
+    width: 420px; height: 420px;
     background: {T['authMesh1']};
-    top: -80px; right: -60px;
-    animation: blob1 14s ease-in-out infinite;
+    top: -100px; right: -80px;
+    animation: orb1 20s ease-in-out infinite;
 }}
-.auth-blob2 {{
-    width: 320px; height: 320px;
+.auth-orb-2 {{
+    width: 340px; height: 340px;
     background: {T['authMesh2']};
-    bottom: -60px; left: -40px;
-    animation: blob2 18s ease-in-out infinite;
+    bottom: -80px; left: -60px;
+    animation: orb2 24s ease-in-out infinite;
 }}
+.auth-orb-3 {{
+    width: 200px; height: 200px;
+    background: {'rgba(180,140,60,0.06)' if not IS_DARK else 'rgba(212,168,75,0.04)'};
+    top: 40%; left: 60%;
+    animation: orb3 16s ease-in-out infinite;
+}}
+
+/* Auth card — clean, warm, artful */
 .auth-card {{
     position: relative; z-index: 1;
-    background: var(--bg-1);
-    border: 1px solid var(--brd-1);
-    border-radius: var(--r-lg);
-    padding: 2.5rem 2rem;
-    width: 100%; max-width: 400px;
-    box-shadow: var(--sh-deep);
-    animation: fadeUp 0.6s var(--ease) both;
+    background: {'rgba(255,255,255,0.92)' if not IS_DARK else 'rgba(24,26,38,0.92)'};
+    backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px);
+    border: 1px solid {'rgba(90,75,50,0.1)' if not IS_DARK else 'rgba(180,160,110,0.1)'};
+    border-radius: 20px;
+    padding: 2.8rem 2.2rem 2rem 2.2rem;
+    width: 100%; max-width: 420px;
+    box-shadow: {'0 8px 32px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04)' if not IS_DARK else '0 12px 48px rgba(0,0,0,0.35)'};
+    animation: fadeUp 0.55s var(--ease) both;
 }}
-.auth-card::before {{
-    content: '';
-    position: absolute; top: -1px; left: 12%; right: 12%; height: 1px;
-    background: linear-gradient(90deg, transparent, var(--accent), transparent);
-    border-radius: 1px;
+
+/* Top decorative line */
+.auth-accent-line {{
+    width: 40px; height: 3px;
+    border-radius: 2px;
+    background: linear-gradient(90deg, var(--accent), var(--accent-lt));
+    margin: 0 auto 1.6rem auto;
 }}
 .auth-title {{
-    font-family: 'Cinzel Decorative', serif !important;
-    font-size: 1.8rem !important;
+    font-family: 'Playfair Display', serif !important;
+    font-size: 1.7rem !important;
+    font-weight: 700 !important;
     color: var(--heading) !important;
     text-align: center;
-    margin-bottom: 0.2rem;
+    margin-bottom: 0.15rem;
+    letter-spacing: -0.01em;
 }}
 .auth-sub {{
     font-family: 'Crimson Pro', serif !important;
     text-align: center;
     color: var(--tx-2) !important;
-    font-size: 0.95rem !important;
+    font-size: 0.92rem !important;
     font-style: italic;
-    margin-bottom: 1.5rem;
+    margin-bottom: 1.4rem;
 }}
 .auth-divider {{
     display: flex; align-items: center; gap: 10px;
-    margin: 1rem 0;
+    margin: 0.8rem 0;
     color: var(--tx-2);
     font-family: 'Inter', sans-serif !important;
-    font-size: 0.7rem !important;
+    font-size: 0.68rem !important;
     text-transform: uppercase; letter-spacing: 0.1em;
 }}
 .auth-divider::before, .auth-divider::after {{
     content: ''; flex: 1; height: 1px; background: var(--brd-1);
 }}
 
-/* Google button container */
-.google-btn-area {{
-    display: flex; align-items: center; justify-content: center;
-    gap: 8px;
-    padding: 0.25rem 0 0.15rem 0;
+/* Google OAuth button — Streamlit button with G logo via ::before */
+.g-btn-wrap .stButton > button {{
+    background: {T['gBtnBg']} !important;
+    border: 1px solid {T['gBtnBrd']} !important;
+    color: {T['gBtnTx']} !important;
+    font-family: 'Inter', sans-serif !important;
+    font-size: 0.88rem !important;
+    font-weight: 500 !important;
+    border-radius: 8px !important;
+    padding: 10px 16px !important;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.04) !important;
+    transition: all 0.2s var(--ease) !important;
+}}
+.g-btn-wrap .stButton > button::before {{
+    content: '';
+    display: inline-block;
+    width: 18px; height: 18px;
+    margin-right: 10px;
+    flex-shrink: 0;
+    vertical-align: middle;
+    background: url("data:image/svg+xml,%3Csvg viewBox='0 0 24 24' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z' fill='%234285F4'/%3E%3Cpath d='M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z' fill='%2334A853'/%3E%3Cpath d='M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z' fill='%23FBBC05'/%3E%3Cpath d='M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z' fill='%23EA4335'/%3E%3C/svg%3E") no-repeat center/contain;
+}}
+.g-btn-wrap .stButton > button:hover {{
+    background: {T['gBtnHov']} !important;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08) !important;
+    border-color: {'#c0c0c0' if not IS_DARK else 'rgba(180,160,110,0.28)'} !important;
+    transform: none !important;
+}}
+
+/* Auth footer — theme toggle */
+.auth-footer {{
+    display: flex; align-items: center; justify-content: center; gap: 6px;
+    margin-top: 1.2rem; padding-top: 1rem;
+    border-top: 1px solid var(--brd-1);
+    color: var(--tx-2);
+    font-family: 'Inter', sans-serif;
+    font-size: 0.72rem;
 }}
 
 /* ── Form Inputs ─────────────────────────────── */
@@ -937,12 +993,12 @@ def _start_google_oauth():
 
 
 def _render_google_button(key: str = "google_login"):
-    """Render a branded Google button with the official G logo."""
-    st.markdown(f'''
-    <div class="google-btn-area">{ICONS["google"]}</div>
-    ''', unsafe_allow_html=True)
+    """Google sign-in: styled Streamlit button with G logo injected via CSS ::before."""
+    # The wrapping div with class lets us target the button precisely
+    st.markdown('<div class="g-btn-wrap">', unsafe_allow_html=True)
     if st.button("Continue with Google", key=key, use_container_width=True):
         _start_google_oauth()
+    st.markdown('</div>', unsafe_allow_html=True)
 
 
 # ─── Auth Page ────────────────────────────────────────────────────────────────
@@ -952,23 +1008,15 @@ def auth_page():
     if is_logged_in():
         return
 
-    # Theme toggle on auth page
-    col_spacer, col_toggle = st.columns([8, 2])
-    with col_toggle:
-        st.markdown(f'<div style="display:flex;align-items:center;gap:6px;padding:2px 0;">{icon("moon" if not IS_DARK else "sun", T["tx1"], 15)}<span style="font-family:Inter,sans-serif;font-size:0.72rem;color:{T["tx1"]}">Theme</span></div>', unsafe_allow_html=True)
-        dark_val = st.toggle("Dark mode", value=IS_DARK, key="auth_theme", label_visibility="collapsed")
-        if dark_val != IS_DARK:
-            st.session_state.theme = "dark" if dark_val else "light"
-            st.rerun()
-
     st.markdown(f'''
     <div class="auth-outer">
-        <div class="auth-blob1"></div>
-        <div class="auth-blob2"></div>
+        <div class="auth-orb auth-orb-1"></div>
+        <div class="auth-orb auth-orb-2"></div>
+        <div class="auth-orb auth-orb-3"></div>
         <div class="auth-card">
-            <div style="text-align:center;margin-bottom:0.8rem;">{icon("book", T["accent"], 28)}</div>
+            <div class="auth-accent-line"></div>
             <div class="auth-title">Life as Lore</div>
-            <div class="auth-sub">Every life is an epic. Yours begins here.</div>
+            <div class="auth-sub">Transform your life into an epic fantasy chronicle</div>
     ''', unsafe_allow_html=True)
 
     tab_login, tab_signup = st.tabs(["Sign In", "Create Account"])
@@ -978,6 +1026,16 @@ def auth_page():
 
     with tab_signup:
         _signup_form()
+
+    # Theme toggle inside card footer
+    st.markdown(f'''<div class="auth-footer">
+        {icon("moon" if not IS_DARK else "sun", T["tx2"], 13)}
+        <span style="margin-right:4px;">Appearance</span>
+    </div>''', unsafe_allow_html=True)
+    dark_val = st.toggle("Dark mode", value=IS_DARK, key="auth_theme", label_visibility="collapsed")
+    if dark_val != IS_DARK:
+        st.session_state.theme = "dark" if dark_val else "light"
+        st.rerun()
 
     st.markdown('</div></div>', unsafe_allow_html=True)
 

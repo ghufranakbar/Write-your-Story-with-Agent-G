@@ -1108,50 +1108,42 @@ def _get_google_oauth_url() -> str:
 
 
 def _render_google_button(key: str = "google_login"):
-    """Google sign-in: rendered using Streamlit components so Javascript execution can forcibly redirect the top window."""
-    auth_url = _get_google_oauth_url()
+    """Google sign-in: rendered as a native st.markdown link to avoid iframe sandboxing and repeated generation."""
 
-    # Streamlit components render inside their own iframes. 
-    # Use target="_blank" so we explicitly exit Streamlit entirely to do the Google auth. 
-    # Background transparent per user request!
-    components.html(f'''
-    <style>
-        body {{ margin: 0; padding: 0; display: flex; justify-content: center; background: transparent !important; }}
-        .btn {{
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            text-decoration: none;
-            background: transparent;
-            border: 1px solid rgba(130, 110, 70, 0.4);
-            color: #d8c8a8;
-            font-family: 'Inter', sans-serif;
-            font-size: 0.88rem;
-            font-weight: 500;
-            border-radius: 8px;
-            padding: 10px 16px;
-            width: 100%;
-            height: 40px;
-            box-sizing: border-box;
-            cursor: pointer;
-            transition: all 0.2s;
-        }}
-        .btn:hover {{
-            background: rgba(60, 60, 65, 0.2);
-            border-color: rgba(180, 160, 110, 0.6);
-        }}
-        .logo {{
-            width: 18px; height: 18px;
-            margin-right: 10px;
-            flex-shrink: 0;
-            background: url("data:image/svg+xml,%3Csvg viewBox='0 0 24 24' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z' fill='%234285F4'/%3E%3Cpath d='M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z' fill='%2334A853'/%3E%3Cpath d='M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z' fill='%23FBBC05'/%3E%3Cpath d='M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z' fill='%23EA4335'/%3E%3C/svg%3E") no-repeat center/contain;
-        }}
-    </style>
-    <a class="btn" href="{auth_url}" target="_blank">
-        <div class="logo"></div>
-        <span>Continue with Google</span>
+    # Cache the auth URL so we don't invalidate the PKCE code on every rerun
+    if "google_auth_url" not in st.session_state:
+        st.session_state["google_auth_url"] = _get_google_oauth_url()
+        
+    auth_url = st.session_state["google_auth_url"]
+
+    html = f'''
+    <a href="{auth_url}" target="_top" style="
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        text-decoration: none;
+        background: transparent;
+        border: 1px solid rgba(130, 110, 70, 0.4);
+        color: #d8c8a8;
+        font-family: 'Inter', sans-serif;
+        font-size: 0.88rem;
+        font-weight: 500;
+        border-radius: 8px;
+        padding: 5px 16px;
+        width: 100%;
+        height: 44px;
+        box-sizing: border-box;
+        cursor: pointer;
+        transition: all 0.2s;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+        margin-bottom: 5px;
+    " onmouseover="this.style.background='rgba(60, 60, 65, 0.2)'; this.style.borderColor='rgba(180, 160, 110, 0.6)';"
+       onmouseout="this.style.background='transparent'; this.style.borderColor='rgba(130, 110, 70, 0.4)';">
+       <span style="width: 18px; height: 18px; margin-right: 10px; display: inline-block; flex-shrink: 0; background: url('data:image/svg+xml,%3Csvg viewBox=\'0 0 24 24\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cpath d=\'M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z\' fill=\'%234285F4\'/%3E%3Cpath d=\'M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z\' fill=\'%2334A853\'/%3E%3Cpath d=\'M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z\' fill=\'%23FBBC05\'/%3E%3Cpath d=\'M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z\' fill=\'%23EA4335\'/%3E%3C/svg%3E') no-repeat center/contain;"></span>
+       Continue with Google
     </a>
-    ''', height=45)
+    '''
+    st.markdown(html, unsafe_allow_html=True)
 
 # ─── Auth Page ────────────────────────────────────────────────────────────────
 
@@ -1186,12 +1178,33 @@ def auth_page():
             _signup_form()
 
         # Theme button — real clickable button
-        st.markdown('<div class="auth-footer">', unsafe_allow_html=True)
+        st.markdown('''<style>
+        [data-testid="stVerticalBlock"] [data-testid="stButton"] > button[kind="secondary"] {
+            background: transparent !important;
+            border: 1px solid rgba(130, 110, 70, 0.4) !important;
+            color: #d8c8a8 !important;
+            font-family: 'Inter', sans-serif !important;
+            font-size: 0.88rem !important;
+            font-weight: 500 !important;
+            border-radius: 8px !important;
+            padding: 5px 16px !important;
+            height: 44px !important;
+            width: 100% !important;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.04) !important;
+            transition: all 0.2s !important;
+            margin-top: 5px !important;
+        }
+        [data-testid="stVerticalBlock"] [data-testid="stButton"] > button[kind="secondary"]:hover {
+            background: rgba(60, 60, 65, 0.2) !important;
+            border-color: rgba(180, 160, 110, 0.6) !important;
+            color: #d8c8a8 !important;
+        }
+        </style>''', unsafe_allow_html=True)
+        
         theme_label = "Switch to Dark Mode" if not IS_DARK else "Switch to Light Mode"
         if st.button(f"{'🌙' if not IS_DARK else '☀️'}  {theme_label}", key="auth_theme_btn", use_container_width=True):
             st.session_state.theme = "dark" if not IS_DARK else "light"
             st.rerun()
-        st.markdown('</div>', unsafe_allow_html=True)
 
 
 def _login_form():

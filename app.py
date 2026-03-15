@@ -170,8 +170,20 @@ html, body, [class*="css"] {{
     border-right: 1px solid var(--brd-1) !important;
     transition: background 0.35s var(--ease);
 }}
+[data-testid="stSidebar"] > div {{
+    background: var(--sidebar) !important;
+}}
 [data-testid="stSidebar"] * {{
     font-family: 'Inter', -apple-system, sans-serif !important;
+}}
+[data-testid="stSidebar"] [data-testid="stVerticalBlock"],
+[data-testid="stSidebar"] [data-testid="stVerticalBlockBorderWrapper"],
+[data-testid="stSidebar"] section {{
+    background: transparent !important;
+}}
+/* Force option-menu in sidebar to inherit theme */
+[data-testid="stSidebar"] iframe {{
+    background: transparent !important;
 }}
 
 .sidebar-brand {{
@@ -252,6 +264,30 @@ html, body, [class*="css"] {{
     padding: 4px 0;
 }}
 
+/* Theme switch button — styled clickable element */
+.theme-switch-btn .stButton > button {{
+    background: var(--bg-2) !important;
+    border: 1px solid var(--brd-2) !important;
+    color: var(--tx-1) !important;
+    font-family: 'Inter', sans-serif !important;
+    font-size: 0.78rem !important;
+    font-weight: 500 !important;
+    border-radius: 8px !important;
+    padding: 0.4rem 0.9rem !important;
+    display: flex !important;
+    align-items: center !important;
+    gap: 6px !important;
+    width: 100% !important;
+    justify-content: center !important;
+    cursor: pointer !important;
+}}
+.theme-switch-btn .stButton > button:hover {{
+    background: var(--accent-bg) !important;
+    border-color: var(--accent) !important;
+    color: var(--accent) !important;
+    transform: none !important;
+}}
+
 /* ── Typography ──────────────────────────────── */
 h1, h2 {{
     font-family: 'Playfair Display', serif !important;
@@ -299,7 +335,7 @@ p, li, div {{
     font-family: 'Cinzel Decorative', serif !important;
     font-size: 2.6rem;
     text-align: center;
-    margin: 1.5rem 0 0.2rem 0;
+    margin: 0.8rem 0 0.2rem 0;
     background: linear-gradient(135deg, var(--heading) 0%, var(--accent-lt) 50%, var(--heading) 100%);
     background-size: 200% auto;
     -webkit-background-clip: text;
@@ -316,13 +352,13 @@ p, li, div {{
     font-family: 'Crimson Pro', serif !important;
     font-style: italic;
     font-size: 1.1rem !important;
-    margin: 0 0 1.8rem 0;
+    margin: 0 0 1rem 0;
 }}
 
 /* Decorative divider */
 .lore-divider {{
     display: flex; align-items: center; justify-content: center; gap: 10px;
-    margin: 1.8rem 0; color: var(--tx-2); opacity: 0.45;
+    margin: 0.8rem 0; color: var(--tx-2); opacity: 0.45;
 }}
 .lore-divider::before, .lore-divider::after {{
     content: ''; flex: 1; max-width: 60px; height: 1px;
@@ -335,7 +371,7 @@ p, li, div {{
     font-family: 'Inter', sans-serif !important;
     font-size: 0.7rem !important; color: var(--tx-2) !important;
     text-transform: uppercase; letter-spacing: 0.1em; font-weight: 600;
-    margin: 1.5rem 0 0.7rem 0;
+    margin: 0.8rem 0 0.5rem 0;
 }}
 .section-label::after {{
     content: ''; flex: 1; height: 1px; background: var(--brd-1);
@@ -345,7 +381,7 @@ p, li, div {{
 .book-container {{
     display: flex;
     max-width: 900px;
-    margin: 2rem auto;
+    margin: 1rem auto;
     perspective: 1400px;
     filter: drop-shadow(var(--sh-deep));
     animation: fadeUp 0.55s var(--ease) both;
@@ -536,10 +572,10 @@ p, li, div {{
     border: 1px solid var(--brd-2);
     border-radius: var(--r-lg);
     background: var(--prop-bg);
-    padding: 2.8rem 2.2rem;
+    padding: 2rem 1.8rem;
     text-align: center;
     max-width: 650px;
-    margin: 1.8rem auto;
+    margin: 1rem auto;
     box-shadow: var(--sh-deep);
     overflow: hidden;
     animation: fadeUp 0.5s var(--ease) both;
@@ -668,12 +704,30 @@ p, li, div {{
 
 /* Auth footer — theme toggle row */
 .auth-footer {{
-    display: flex; align-items: center; justify-content: center; gap: 6px;
-    margin-top: 0.6rem; padding-top: 0.6rem;
+    margin-top: 0.8rem; padding-top: 0.8rem;
     border-top: 1px solid var(--brd-1);
-    color: var(--tx-2);
-    font-family: 'Inter', sans-serif;
-    font-size: 0.72rem;
+}}
+.auth-footer .stButton > button {{
+    background: var(--bg-2) !important;
+    border: 1px solid var(--brd-2) !important;
+    color: var(--tx-1) !important;
+    font-family: 'Inter', sans-serif !important;
+    font-size: 0.78rem !important;
+    font-weight: 500 !important;
+    border-radius: 8px !important;
+    padding: 0.45rem 1rem !important;
+    width: 100% !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 6px !important;
+    cursor: pointer !important;
+}}
+.auth-footer .stButton > button:hover {{
+    background: var(--accent-bg) !important;
+    border-color: var(--accent) !important;
+    color: var(--accent) !important;
+    transform: none !important;
 }}
 
 /* ── Form Inputs ─────────────────────────────── */
@@ -770,7 +824,7 @@ label {{
 /* ── Empty state ──────────────────────────────── */
 .empty-state {{
     text-align: center;
-    padding: 3rem 1rem;
+    padding: 2rem 1rem;
     animation: fadeUp 0.5s var(--ease) both;
 }}
 .empty-state-icon {{
@@ -797,6 +851,24 @@ label {{
 #MainMenu, footer, .stDeployButton {{ display: none; }}
 [data-testid="stSidebarNav"] {{ display: none; }}
 
+/* ── Kill empty space ────────────────────────── */
+/* Reduce Streamlit's default block gap (the main source of whitespace) */
+[data-testid="stVerticalBlock"] > div:has( > [data-testid="stMarkdownContainer"]:empty),
+.element-container:has(> iframe[height="0"]) {{
+    display: none !important;
+}}
+[data-testid="stVerticalBlock"] > div {{
+    margin-bottom: 0 !important;
+    padding-bottom: 0 !important;
+}}
+.block-container {{
+    padding-top: 1.5rem !important;
+    padding-bottom: 1rem !important;
+}}
+header[data-testid="stHeader"] {{
+    background: var(--bg-0) !important;
+}}
+
 /* Toggle switch */
 [data-testid="stToggle"] label {{
     font-family: 'Inter', sans-serif !important;
@@ -807,9 +879,27 @@ label {{
     color: var(--tx-1) !important;
 }}
 
-/* Option menu overrides */
+/* Option menu overrides — force theme colors on all states */
 .nav-link {{
     transition: all 0.2s var(--ease) !important;
+    background-color: transparent !important;
+}}
+.nav-link:hover {{
+    background-color: var(--bg-2) !important;
+    color: var(--accent) !important;
+}}
+.nav-link-selected {{
+    background-color: var(--accent-bg) !important;
+    color: var(--accent) !important;
+}}
+
+/* Streamlit divider \u2014 less space */
+[data-testid="stSidebar"] hr {{
+    margin: 0.4rem 0 !important;
+    border-color: var(--brd-1) !important;
+}}
+hr {{
+    border-color: var(--brd-1) !important;
 }}
 
 /* ── Responsive ──────────────────────────────── */
@@ -1007,15 +1097,13 @@ def auth_page():
         with tab_signup:
             _signup_form()
 
-        # Theme toggle — real Streamlit widget, fully clickable
-        st.markdown(f'''<div class="auth-footer">
-            {icon("moon" if not IS_DARK else "sun", T["tx2"], 13)}
-            <span>Appearance</span>
-        </div>''', unsafe_allow_html=True)
-        dark_val = st.toggle("Dark mode", value=IS_DARK, key="auth_theme", label_visibility="collapsed")
-        if dark_val != IS_DARK:
-            st.session_state.theme = "dark" if dark_val else "light"
+        # Theme button — real clickable button
+        st.markdown('<div class="auth-footer">', unsafe_allow_html=True)
+        theme_label = "Switch to Dark Mode" if not IS_DARK else "Switch to Light Mode"
+        if st.button(f"{'🌙' if not IS_DARK else '☀️'}  {theme_label}", key="auth_theme_btn", use_container_width=True):
+            st.session_state.theme = "dark" if not IS_DARK else "light"
             st.rerun()
+        st.markdown('</div>', unsafe_allow_html=True)
 
 
 def _login_form():
@@ -1227,12 +1315,13 @@ def sidebar(world: dict) -> str:
 
         st.divider()
 
-        # Theme toggle
-        st.markdown(f'<div style="display:flex;align-items:center;gap:7px;margin-bottom:2px;">{icon("moon" if not IS_DARK else "sun", T["tx1"], 14)}<span style="font-family:Inter,sans-serif;font-size:0.72rem;color:{T["tx2"]}">Appearance</span></div>', unsafe_allow_html=True)
-        dark_mode = st.toggle("Dark mode", value=IS_DARK, key="sidebar_theme", label_visibility="collapsed")
-        if dark_mode != IS_DARK:
-            st.session_state.theme = "dark" if dark_mode else "light"
+        # Theme button — visible, clickable
+        theme_label = "Dark Mode" if not IS_DARK else "Light Mode"
+        st.markdown('<div class="theme-switch-btn">', unsafe_allow_html=True)
+        if st.button(f"{'🌙' if not IS_DARK else '☀️'}  {theme_label}", key="sidebar_theme_btn", use_container_width=True):
+            st.session_state.theme = "dark" if not IS_DARK else "light"
             st.rerun()
+        st.markdown('</div>', unsafe_allow_html=True)
 
         st.markdown(f'<div class="sidebar-email">{st.session_state.get("user_email", "")}</div>', unsafe_allow_html=True)
 

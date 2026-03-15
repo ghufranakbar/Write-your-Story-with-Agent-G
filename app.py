@@ -1,15 +1,15 @@
 """
-app.py — Life as Lore (multi-user)
-A personal mythology engine. Narrate your life. Read it as epic fantasy.
-Each user gets their own completely private, isolated chronicle.
+app.py — Life as Lore · Personal Mythology Engine
+Narrate your life. Read it as epic fantasy. Multi-user via Supabase RLS.
 """
 
 import streamlit as st
+import streamlit.components.v1 as components
 from supabase import create_client, Client
 import database as db
 import agents
 
-# ── Page Config ───────────────────────────────────────────────────────────────
+# ─── Page Config ──────────────────────────────────────────────────────────────
 
 st.set_page_config(
     page_title="Life as Lore",
@@ -18,349 +18,896 @@ st.set_page_config(
     initial_sidebar_state="expanded",
 )
 
-# ── Global CSS & Scripts — 3D Dark Fantasy Aesthetic ─────────────────────────
+# ─── SVG Icon Library ────────────────────────────────────────────────────────
+# Inline SVGs for a polished, consistent icon set across the UI.
+
+ICONS = {
+    "quill": '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg>',
+    "book": '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20"/></svg>',
+    "users": '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>',
+    "sword": '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 17.5 3 6V3h3l11.5 11.5"/><path d="M13 19l6-6"/><path d="M16 16l4 4"/><path d="M19 21l2-2"/></svg>',
+    "crystal": '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h12l4 6-10 13L2 9Z"/><path d="M2 9h20"/><path d="M12 22 6 9"/><path d="M12 22l6-13"/></svg>',
+    "sparkle": '<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0l2.5 9.5L24 12l-9.5 2.5L12 24l-2.5-9.5L0 12l9.5-2.5z"/></svg>',
+    "scroll": '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M8 21h12a2 2 0 0 0 2-2v-2H10v2a2 2 0 1 1-4 0V5a2 2 0 1 0-4 0v3h4"/><path d="M19 3H8a2 2 0 0 0-2 2v12"/></svg>',
+    "compass": '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"/></svg>',
+    "shield": '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>',
+    "crown": '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M2 4l3 12h14l3-12-6 7-4-7-4 7-6-7z"/><path d="M5 16h14v4H5z"/></svg>',
+    "flame": '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"/></svg>',
+    "eye": '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>',
+    "logout": '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>',
+    "google": '<svg width="18" height="18" viewBox="0 0 24 24"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z" fill="#4285F4"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/></svg>',
+    "check": '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>',
+    "x_mark": '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>',
+    "globe": '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>',
+}
+
+def icon(name: str, color: str = "#c9a84c", size: int = 20) -> str:
+    """Return an SVG icon string styled with the given color and size."""
+    svg = ICONS.get(name, "")
+    return f'<span style="color:{color};display:inline-flex;align-items:center;vertical-align:middle;width:{size}px;height:{size}px;">{svg}</span>'
+
+
+# ─── Global CSS — Notion × Dark Fantasy ──────────────────────────────────────
 
 st.markdown("""
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@400;700&family=Crimson+Pro:ital,wght@0,300..900;1,300..900&family=Uncial+Antiqua&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Playfair+Display:ital,wght@0,400..900;1,400..900&family=Crimson+Pro:ital,wght@0,300..900;1,300..900&family=Cinzel+Decorative:wght@400;700&display=swap');
 
-/* Base & Vignette Overlay */
-html, body, [class*="css"] { 
-    background-color: #080608 !important; 
-    color: #e2d8c3 !important; 
+/* ── Foundation ──────────────────────────────── */
+:root {
+    --bg-primary:   #0a0a0f;
+    --bg-secondary: #111118;
+    --bg-elevated:  #16161f;
+    --bg-surface:   #1c1c28;
+    --border-subtle: rgba(201, 168, 76, 0.12);
+    --border-medium: rgba(201, 168, 76, 0.22);
+    --border-strong: rgba(201, 168, 76, 0.4);
+    --gold:         #c9a84c;
+    --gold-light:   #e8d9b8;
+    --gold-dim:     #8c764c;
+    --gold-faint:   rgba(201, 168, 76, 0.08);
+    --text-primary: #e8e4dd;
+    --text-secondary:#a8a29e;
+    --text-muted:   #6b6560;
+    --accent-green: #4ade80;
+    --accent-blue:  #60a5fa;
+    --accent-red:   #f87171;
+    --radius-sm:    6px;
+    --radius-md:    10px;
+    --radius-lg:    16px;
+    --shadow-card:  0 2px 8px rgba(0,0,0,0.3), 0 12px 40px rgba(0,0,0,0.2);
+    --shadow-hover: 0 8px 30px rgba(0,0,0,0.4), 0 0 0 1px var(--border-medium);
+    --shadow-deep:  0 20px 60px rgba(0,0,0,0.5), 0 0 0 1px var(--border-subtle);
+    --transition:   all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
 }
-.stApp { 
-    background: radial-gradient(circle at 50% 50%, rgba(20, 10, 25, 0.3) 0%, #080608 100%) !important; 
+html, body, [class*="css"] {
+    background-color: var(--bg-primary) !important;
+    color: var(--text-primary) !important;
 }
+.stApp {
+    background: var(--bg-primary) !important;
+    background-image:
+        radial-gradient(ellipse 80% 60% at 50% 0%, rgba(201, 168, 76, 0.03) 0%, transparent 60%),
+        radial-gradient(circle at 20% 80%, rgba(99, 76, 168, 0.02) 0%, transparent 40%) !important;
+}
+
+/* Subtle vignette — less aggressive than before */
 .stApp::after {
     content: '';
     position: fixed;
-    top: 0; left: 0; right: 0; bottom: 0;
-    background: radial-gradient(circle at center, transparent 30%, rgba(0,0,0,0.6) 100%);
+    inset: 0;
+    background: radial-gradient(ellipse at center, transparent 50%, rgba(0,0,0,0.35) 100%);
     pointer-events: none;
     z-index: 9999;
 }
 
-/* Sidebar - Dark Leather */
-[data-testid="stSidebar"] { 
-    background: repeating-linear-gradient(45deg, #0f0a0c 0%, #171113 4%, #0f0a0c 8%) !important;
-    border-right: 4px ridge #c9a84c; 
-    box-shadow: inset -5px 0 15px rgba(0,0,0,0.8);
+/* ── Sidebar — Notion-style clean panel ──────── */
+[data-testid="stSidebar"] {
+    background: var(--bg-secondary) !important;
+    border-right: 1px solid var(--border-subtle) !important;
+    backdrop-filter: blur(20px);
 }
-[data-testid="stSidebar"] * { color: #d1b882 !important; font-family: 'Crimson Pro', serif !important; }
-[data-testid="stSidebar"] h3 { font-family: 'Uncial Antiqua', serif !important; text-shadow: 0 0 5px rgba(201,168,76,0.3); }
-[data-testid="stSidebarHr"] {
-    border-top: 2px dashed #c9a84c;
-    background: none;
+[data-testid="stSidebar"] * {
+    font-family: 'Inter', -apple-system, sans-serif !important;
+}
+
+/* Sidebar world header */
+.sidebar-world {
+    padding: 0.25rem 0 1rem 0;
+    border-bottom: 1px solid var(--border-subtle);
+    margin-bottom: 1rem;
+}
+.sidebar-world-name {
+    font-family: 'Playfair Display', serif !important;
+    font-size: 1.35rem !important;
+    color: var(--gold) !important;
+    font-weight: 600;
+    letter-spacing: 0.01em;
+    margin: 0;
+    line-height: 1.3;
+}
+.sidebar-hero {
+    font-family: 'Crimson Pro', serif !important;
+    font-size: 0.95rem;
+    color: var(--text-secondary);
+    font-style: italic;
+    margin: 0.15rem 0 0 0;
+}
+.sidebar-era {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-family: 'Inter', sans-serif !important;
+    font-size: 0.72rem;
+    color: var(--gold-dim);
+    background: var(--gold-faint);
+    padding: 3px 10px;
+    border-radius: 20px;
+    margin-top: 0.5rem;
+    letter-spacing: 0.03em;
+    text-transform: uppercase;
+    font-weight: 500;
+}
+.sidebar-stat {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.82rem;
+    color: var(--text-secondary);
+    margin-top: 0.6rem;
+}
+.sidebar-stat-num {
+    font-weight: 600;
+    color: var(--gold-light);
+    font-variant-numeric: tabular-nums;
+}
+
+/* Sidebar navigation — Notion-style hover items */
+.nav-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 12px;
+    border-radius: var(--radius-sm);
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: var(--transition);
+    margin: 2px 0;
+    font-weight: 400;
+}
+.nav-item:hover {
+    background: var(--gold-faint);
+    color: var(--text-primary);
+}
+.nav-item.active {
+    background: rgba(201, 168, 76, 0.12);
+    color: var(--gold);
+    font-weight: 500;
+}
+
+/* Sidebar user footer */
+.sidebar-footer {
+    border-top: 1px solid var(--border-subtle);
+    padding-top: 0.75rem;
+    margin-top: auto;
+}
+.sidebar-email {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    margin-bottom: 0.5rem;
+}
+
+/* ── Typography ──────────────────────────────── */
+h1, h2 {
+    font-family: 'Playfair Display', serif !important;
+    color: var(--gold) !important;
+    font-weight: 700 !important;
+    letter-spacing: -0.01em;
+    text-shadow: none !important;
+}
+h3, h4 {
+    font-family: 'Inter', sans-serif !important;
+    color: var(--text-primary) !important;
+    font-weight: 600 !important;
+    letter-spacing: -0.01em;
+    text-shadow: none !important;
+}
+p, li, div {
+    font-family: 'Crimson Pro', serif !important;
+    font-size: 1.1rem !important;
+    line-height: 1.75 !important;
+}
+
+/* Page header with icon */
+.page-header {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    margin: 0.5rem 0 0.3rem 0;
+    padding-bottom: 0.2rem;
+}
+.page-header-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: var(--radius-md);
+    background: var(--gold-faint);
+    border: 1px solid var(--border-subtle);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--gold);
+    flex-shrink: 0;
+}
+.page-header h2 {
+    margin: 0 !important;
+    font-size: 1.8rem !important;
+}
+.page-subtitle {
+    font-family: 'Crimson Pro', serif !important;
+    color: var(--text-secondary);
+    font-style: italic;
+    font-size: 1.05rem !important;
+    margin: 0 0 1.5rem 0;
+    padding-left: 54px;
+}
+
+/* Notion-style divider */
+.lore-divider {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    margin: 2rem 0;
+    color: var(--gold-dim);
     opacity: 0.5;
 }
-
-/* Typography */
-h1, h2, h3 { 
-    font-family: 'Uncial Antiqua', serif !important; 
-    color: #c9a84c !important; 
-    letter-spacing: 0.05em; 
-    text-shadow: 1px 2px 4px rgba(0,0,0,0.8);
+.lore-divider::before, .lore-divider::after {
+    content: '';
+    flex: 1;
+    max-width: 80px;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--border-medium), transparent);
 }
-.app-title { font-family: 'Cinzel Decorative', serif !important; font-size: 3rem; text-align: center; color: #e8d9b8; text-shadow: 0 0 15px rgba(201, 168, 76, 0.5); margin-top:2rem; }
-p, li, div { font-family: 'Crimson Pro', serif !important; font-size: 1.15rem !important; line-height: 1.8 !important; }
 
-/* 3D Open Book (Chapters) */
+/* App title — genesis & auth pages */
+.app-title {
+    font-family: 'Cinzel Decorative', serif !important;
+    font-size: 2.8rem;
+    text-align: center;
+    color: var(--gold-light);
+    letter-spacing: 0.03em;
+    margin-top: 2rem;
+    background: linear-gradient(180deg, #f0e6d0 0%, #c9a84c 50%, #8c764c 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+.app-subtitle {
+    text-align: center;
+    color: var(--text-secondary);
+    font-family: 'Crimson Pro', serif !important;
+    font-style: italic;
+    font-size: 1.15rem !important;
+    margin: 0.3rem 0 2rem 0;
+}
+
+/* ── 3D Book Layout (Chapters) ───────────────── */
 .book-container {
     display: flex;
-    flex-direction: row;
-    max-width: 900px;
-    margin: 3rem auto;
-    perspective: 1200px;
-    filter: drop-shadow(0 20px 30px rgba(0,0,0,0.9));
+    max-width: 920px;
+    margin: 2.5rem auto;
+    perspective: 1400px;
+    filter: drop-shadow(0 16px 40px rgba(0,0,0,0.6));
 }
 .page-left, .page-right {
     flex: 1;
-    background: linear-gradient(135deg, #1a1617, #0e0b0c);
-    padding: 3rem 2rem;
-    box-shadow: 
-        inset 0 1px 3px rgba(255,255,255,0.05),
-        inset 0 -5px 15px rgba(201,168,76,0.1),
-        0 10px 20px rgba(0,0,0,0.5);
-    border: 1px solid #2a2218;
+    background: linear-gradient(160deg, var(--bg-elevated), var(--bg-secondary));
+    padding: 2.5rem 2rem;
+    border: 1px solid var(--border-subtle);
+    position: relative;
 }
 .page-left {
-    transform: rotateY(3deg);
+    transform: rotateY(2.5deg);
     transform-origin: right center;
-    border-right: 3px double #0a0708;
+    border-right: none;
+    border-radius: var(--radius-lg) 0 0 var(--radius-lg);
     display: flex;
     flex-direction: column;
     justify-content: center;
-    border-radius: 8px 0 0 8px;
+    align-items: center;
+}
+.page-left::after {
+    content: '';
+    position: absolute;
+    right: 0;
+    top: 10%;
+    height: 80%;
+    width: 1px;
+    background: linear-gradient(180deg, transparent, var(--border-medium), transparent);
 }
 .page-right {
-    transform: rotateY(-3deg);
+    transform: rotateY(-2.5deg);
     transform-origin: left center;
-    border-left: 1px solid #33291f;
-    border-radius: 0 8px 8px 0;
+    border-left: none;
+    border-radius: 0 var(--radius-lg) var(--radius-lg) 0;
 }
 
-.chapter-title { font-family: 'Uncial Antiqua', serif !important; font-size: 2rem !important; color: #c9a84c !important; text-align: center; letter-spacing: 0.05em; margin-bottom: 0.5rem; text-shadow: 0 2px 4px rgba(0,0,0,0.8); }
-.chapter-num { font-family: 'Cinzel Decorative', serif !important; font-size: 1rem !important; color: #8c764c !important; text-align: center; letter-spacing: 0.2em; text-transform: uppercase; margin-bottom: 1rem; }
-.chapter-season { font-family: 'Crimson Pro', serif !important; font-size: 1rem !important; color: #7a6a4a !important; text-align: center; font-style: italic; margin-bottom: 2rem; }
-.chapter-body { font-family: 'Crimson Pro', serif !important; font-size: 1.25rem !important; line-height: 1.9 !important; color: #e2d8c3; }
-.chapter-body p:first-child::first-letter { 
-    font-size: 4rem; 
-    font-family: 'Uncial Antiqua', serif; 
-    float: left; 
-    line-height: 0.8; 
-    padding-right: 12px; 
-    color: #c9a84c; 
-    text-shadow: 2px 2px 0px rgba(0,0,0,0.6), 0 0 8px rgba(201,168,76,0.5); 
+.chapter-num {
+    font-family: 'Inter', sans-serif !important;
+    font-size: 0.72rem !important;
+    color: var(--gold-dim) !important;
+    text-transform: uppercase;
+    letter-spacing: 0.25em;
+    font-weight: 600;
+    margin-bottom: 0.8rem;
+}
+.chapter-title {
+    font-family: 'Playfair Display', serif !important;
+    font-size: 1.8rem !important;
+    color: var(--gold) !important;
+    text-align: center;
+    letter-spacing: 0.01em;
+    margin-bottom: 0.5rem;
+    font-weight: 700;
+    line-height: 1.2 !important;
+}
+.chapter-season {
+    font-family: 'Crimson Pro', serif !important;
+    font-size: 0.9rem !important;
+    color: var(--text-muted) !important;
+    text-align: center;
+    font-style: italic;
+    margin-bottom: 1rem;
+}
+.chapter-body {
+    font-family: 'Crimson Pro', serif !important;
+    font-size: 1.15rem !important;
+    line-height: 1.85 !important;
+    color: var(--text-primary);
+}
+.chapter-body p {
+    margin-bottom: 1rem !important;
+    text-align: justify !important;
+}
+/* Drop cap on first paragraph */
+.chapter-body p:first-child::first-letter {
+    font-size: 3.5rem;
+    font-family: 'Playfair Display', serif;
+    float: left;
+    line-height: 0.85;
+    padding-right: 10px;
+    padding-top: 4px;
+    color: var(--gold);
+    font-weight: 700;
 }
 
-/* Pulsing Ornaments */
-@keyframes pulse-golds {
-    0% { color: #4a3f28; text-shadow: 0 0 2px transparent; }
-    50% { color: #c9a84c; text-shadow: 0 0 8px #c9a84c; }
-    100% { color: #4a3f28; text-shadow: 0 0 2px transparent; }
-}
-.ornament { text-align: center; font-size: 1.5rem; margin: 2rem 0; letter-spacing: 0.5rem; animation: pulse-golds 3s infinite; }
-
-/* 3D Cards */
+/* ── Glassmorphism Cards ─────────────────────── */
 .card-3d-wrapper {
-    perspective: 1000px;
+    perspective: 1200px;
     margin-bottom: 1rem;
 }
 .card-3d {
-    background: linear-gradient(to bottom right, #1a1617, #110e0c);
-    border: 1px solid #3a2e22;
-    border-radius: 6px;
+    background: linear-gradient(135deg, var(--bg-elevated), var(--bg-surface));
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-md);
     padding: 1.5rem;
-    box-shadow: 
-        0 10px 20px rgba(0,0,0,0.6), 
-        inset 0 1px 1px rgba(255, 255, 255, 0.05),
-        inset 0 -15px 15px -15px rgba(201, 168, 76, 0.3);
-    transition: transform 0.1s;
+    backdrop-filter: blur(10px);
+    box-shadow: var(--shadow-card);
+    transition: var(--transition);
     transform-style: preserve-3d;
+    position: relative;
+    overflow: hidden;
 }
-.card-3d-title { font-family: 'Uncial Antiqua', serif; font-size: 1.2rem; color: #c9a84c; margin-bottom: 0.3rem; }
-.card-3d-sub { font-family: 'Cinzel Decorative', serif; font-size: 0.8rem; color: #8c764c; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 0.8rem; }
-.card-3d-desc { font-family: 'Crimson Pro', serif; font-size: 1.05rem; color: #b8a98a; font-style: italic; }
+.card-3d::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.06), transparent);
+}
+.card-3d:hover {
+    box-shadow: var(--shadow-hover);
+    border-color: var(--border-medium);
+    transform: translateY(-2px);
+}
+.card-3d-icon {
+    width: 36px;
+    height: 36px;
+    border-radius: var(--radius-sm);
+    background: var(--gold-faint);
+    border: 1px solid var(--border-subtle);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--gold);
+    margin-bottom: 0.8rem;
+    font-size: 1.1rem;
+}
+.card-3d-title {
+    font-family: 'Playfair Display', serif !important;
+    font-size: 1.15rem !important;
+    color: var(--gold-light) !important;
+    margin-bottom: 0.2rem;
+    font-weight: 600;
+}
+.card-3d-sub {
+    font-family: 'Inter', sans-serif !important;
+    font-size: 0.72rem !important;
+    color: var(--text-muted) !important;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin-bottom: 0.6rem;
+    font-weight: 500;
+}
+.card-3d-desc {
+    font-family: 'Crimson Pro', serif !important;
+    font-size: 1rem !important;
+    color: var(--text-secondary) !important;
+    font-style: italic;
+    line-height: 1.6 !important;
+}
 
-.char-glow { text-shadow: 0 0 8px rgba(201, 168, 76, 0.4); font-weight: bold; color:#e8d9b8; }
-
-/* Quest Badges */
-.badge-active, .badge-done, .badge-abandoned {
-    display: inline-block;
-    padding: 0.2rem 0.8rem;
+/* ── Quest Status Chips ──────────────────────── */
+.quest-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 3px 12px;
     border-radius: 20px;
-    font-family: 'Cinzel Decorative', serif;
-    font-size: 0.75rem;
-    letter-spacing: 0.1em;
-    box-shadow: 
-        inset 0 2px 3px rgba(255,255,255,0.1),
-        inset 0 -2px 3px rgba(0,0,0,0.5),
-        0 4px 6px rgba(0,0,0,0.6);
+    font-family: 'Inter', sans-serif !important;
+    font-size: 0.7rem !important;
+    font-weight: 600;
+    letter-spacing: 0.05em;
     text-transform: uppercase;
 }
-.badge-active   { background: #2a3a1f; color: #9bcd7a; border: 1px solid #4a6a2f; }
-.badge-done     { background: #1c2c3a; color: #7ab3d6; border: 1px solid #2f4f6a; }
-.badge-abandoned{ background: #3a221f; color: #cd7a7a; border: 1px solid #6a322f; }
-
-/* Prophecy Box */
-.prophecy-box { 
-    border: 2px solid #5a4a2a; 
-    border-radius: 8px; 
-    background: linear-gradient(180deg, #141012, #080608); 
-    padding: 3rem; 
-    text-align: center; 
-    max-width: 700px; 
-    margin: 2rem auto;
-    box-shadow: 0 15px 35px rgba(0,0,0,0.8), inset 0 0 20px rgba(201,168,76,0.1);
-    transform: perspective(1000px) rotateX(2deg);
+.quest-active {
+    background: rgba(74, 222, 128, 0.1);
+    color: var(--accent-green);
+    border: 1px solid rgba(74, 222, 128, 0.2);
 }
-.prophecy-text { font-family: 'Crimson Pro', serif !important; font-size: 1.4rem !important; font-style: italic; color: #c9a84c !important; line-height: 2 !important; white-space: pre-line; text-shadow: 0 0 8px rgba(201,168,76,0.3); }
+.quest-done {
+    background: rgba(96, 165, 250, 0.1);
+    color: var(--accent-blue);
+    border: 1px solid rgba(96, 165, 250, 0.2);
+}
+.quest-abandoned {
+    background: rgba(248, 113, 113, 0.1);
+    color: var(--accent-red);
+    border: 1px solid rgba(248, 113, 113, 0.2);
+}
 
-/* Auth Form & Rune Background */
+/* Quest card — Notion-style block */
+.quest-block {
+    background: var(--bg-elevated);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-md);
+    padding: 1.2rem 1.4rem;
+    margin-bottom: 0.75rem;
+    transition: var(--transition);
+    cursor: default;
+}
+.quest-block:hover {
+    background: var(--bg-surface);
+    border-color: var(--border-medium);
+}
+.quest-block-title {
+    font-family: 'Playfair Display', serif !important;
+    font-size: 1.05rem !important;
+    color: var(--text-primary);
+    font-weight: 600;
+    margin-bottom: 0.3rem;
+}
+.quest-block-desc {
+    font-family: 'Crimson Pro', serif !important;
+    font-size: 0.95rem !important;
+    color: var(--text-secondary);
+    font-style: italic;
+    margin: 0.4rem 0;
+}
+.quest-block-real {
+    font-family: 'Inter', sans-serif !important;
+    font-size: 0.75rem !important;
+    color: var(--text-muted);
+    margin-top: 0.5rem;
+}
+
+/* Section label — Notion-style */
+.section-label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-family: 'Inter', sans-serif !important;
+    font-size: 0.75rem !important;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    font-weight: 600;
+    margin: 1.5rem 0 0.75rem 0;
+}
+.section-label-line {
+    flex: 1;
+    height: 1px;
+    background: var(--border-subtle);
+}
+
+/* ── Prophecy Box ────────────────────────────── */
+.prophecy-box {
+    position: relative;
+    border: 1px solid var(--border-medium);
+    border-radius: var(--radius-lg);
+    background: linear-gradient(180deg, var(--bg-elevated), var(--bg-primary));
+    padding: 3rem 2.5rem;
+    text-align: center;
+    max-width: 680px;
+    margin: 2rem auto;
+    box-shadow: var(--shadow-deep);
+    overflow: hidden;
+}
+.prophecy-box::before {
+    content: '';
+    position: absolute;
+    top: -1px;
+    left: 20%;
+    right: 20%;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--gold), transparent);
+}
+.prophecy-box::after {
+    content: '';
+    position: absolute;
+    bottom: -1px;
+    left: 20%;
+    right: 20%;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--gold), transparent);
+}
+.prophecy-icon {
+    width: 48px;
+    height: 48px;
+    margin: 0 auto 1.5rem auto;
+    border-radius: 50%;
+    background: var(--gold-faint);
+    border: 1px solid var(--border-subtle);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--gold);
+}
+.prophecy-text {
+    font-family: 'Crimson Pro', serif !important;
+    font-size: 1.3rem !important;
+    font-style: italic;
+    color: var(--gold) !important;
+    line-height: 2 !important;
+    white-space: pre-line;
+}
+
+/* ── Auth Card ───────────────────────────────── */
 .auth-wrapper {
     position: relative;
-    max-width: 450px;
-    margin: 5rem auto;
-    perspective: 1200px;
+    max-width: 420px;
+    margin: 4rem auto;
 }
-@keyframes rotate-runes {
-    0% { transform: translate(-50%, -50%) rotate(0deg); }
-    100% { transform: translate(-50%, -50%) rotate(360deg); }
+@keyframes slow-rotate {
+    from { transform: translate(-50%, -50%) rotate(0deg); }
+    to   { transform: translate(-50%, -50%) rotate(360deg); }
 }
 .rune-bg {
     position: absolute;
-    top: 50%; left: 50%;
-    width: 600px; height: 600px;
-    background: repeating-conic-gradient(
-        from 0deg,
-        rgba(201, 168, 76, 0.02) 0deg 10deg,
-        transparent 10deg 20deg
-    );
+    top: 50%;
+    left: 50%;
+    width: 500px;
+    height: 500px;
+    background: conic-gradient(from 0deg, rgba(201,168,76,0.02) 0deg, transparent 30deg, rgba(201,168,76,0.015) 60deg, transparent 90deg);
     border-radius: 50%;
-    animation: rotate-runes 60s linear infinite;
+    animation: slow-rotate 90s linear infinite;
     z-index: 0;
     pointer-events: none;
-    mask-image: radial-gradient(circle, black 30%, transparent 70%);
-    -webkit-mask-image: radial-gradient(circle, black 30%, transparent 70%);
+    mask-image: radial-gradient(circle, black 20%, transparent 65%);
+    -webkit-mask-image: radial-gradient(circle, black 20%, transparent 65%);
 }
-.auth-card { 
+.auth-card {
     position: relative;
     z-index: 1;
-    background: linear-gradient(135deg, #161214, #0b0809); 
-    border: 1px solid #3a2e22; 
-    border-radius: 8px; 
-    padding: 3rem 2rem;
-    box-shadow: 0 30px 50px rgba(0,0,0,0.9), inset 0 2px 2px rgba(255,255,255,0.05);
-    transform: rotateX(5deg) translateY(-20px);
+    background: var(--bg-elevated);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-lg);
+    padding: 2.5rem 2rem;
+    box-shadow: var(--shadow-deep);
 }
-.auth-title { font-family: 'Cinzel Decorative', serif; font-size: 2.5rem; color: #e8d9b8; text-align: center; margin-bottom: 0.5rem; text-shadow: 0 0 10px rgba(201,168,76,0.4); }
-.auth-sub { font-family: 'Crimson Pro', serif; text-align: center; color: #8c764c; font-size: 1.1rem; font-style: italic; margin-bottom: 2rem; }
-.auth-divider { display: flex; align-items: center; gap: 10px; margin: 1.5rem 0; color: #5a4a2a; font-family: 'Cinzel Decorative', serif; font-size: 0.8rem; }
-.auth-divider::before, .auth-divider::after { content: ''; flex: 1; height: 1px; background: #3a2e22; }
-
-/* Streamlit Inputs */
-.stTextInput input { background: #0f0b0d !important; border: 1px solid #3a2e22 !important; color: #e2d8c3 !important; border-radius: 4px !important; font-family: 'Crimson Pro', serif !important; font-size: 1.1rem !important; }
-.stTextInput input:focus { border-color: #c9a84c !important; box-shadow: 0 0 8px rgba(201, 168, 76, 0.2) !important; }
-.stTextArea textarea { background: #0f0b0d !important; border: 1px solid #3a2e22 !important; color: #e2d8c3 !important; font-family: 'Crimson Pro', serif !important; font-size: 1.1rem !important; border-radius: 4px !important; }
-label { color: #b8a98a !important; font-family: 'Cinzel Decorative', serif !important; font-size: 0.85rem !important; letter-spacing: 0.05em !important; }
-
-/* 3D Press Buttons */
-.stButton > button { 
-    background: linear-gradient(180deg, #2a2015, #140f0a) !important; 
-    border: 1px solid #5a4a2a !important; 
-    color: #c9a84c !important; 
-    font-family: 'Uncial Antiqua', serif !important; 
-    font-size: 1.1rem !important; 
-    border-radius: 4px !important; 
-    padding: 0.6rem 2rem !important; 
-    transition: all 0.15s ease !important; 
-    box-shadow: 0 6px 15px rgba(0,0,0,0.6), inset 0 1px 1px rgba(255,255,255,0.1) !important;
-    transform: translateY(0);
+.auth-card::before {
+    content: '';
+    position: absolute;
+    top: -1px;
+    left: 15%;
+    right: 15%;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--gold), transparent);
+    border-radius: 1px;
 }
-.stButton > button:hover { 
-    background: linear-gradient(180deg, #35291b, #1a140d) !important; 
-    border-color: #c9a84c !important; 
-    box-shadow: 0 8px 20px rgba(0,0,0,0.8), inset 0 1px 1px rgba(255,255,255,0.2) !important;
-    color: #f4e8cb !important;
+.auth-title {
+    font-family: 'Cinzel Decorative', serif;
+    font-size: 2rem;
+    color: var(--gold-light);
+    text-align: center;
+    margin-bottom: 0.3rem;
+}
+.auth-sub {
+    font-family: 'Crimson Pro', serif;
+    text-align: center;
+    color: var(--text-muted);
+    font-size: 1rem;
+    font-style: italic;
+    margin-bottom: 1.8rem;
+}
+.auth-divider {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin: 1.2rem 0;
+    color: var(--text-muted);
+    font-family: 'Inter', sans-serif;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+}
+.auth-divider::before, .auth-divider::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--border-subtle);
+}
+
+/* ── Form Inputs — Notion-style ──────────────── */
+.stTextInput input, .stTextArea textarea {
+    background: var(--bg-primary) !important;
+    border: 1px solid var(--border-subtle) !important;
+    color: var(--text-primary) !important;
+    border-radius: var(--radius-sm) !important;
+    font-family: 'Crimson Pro', serif !important;
+    font-size: 1.05rem !important;
+    transition: var(--transition) !important;
+    padding: 0.6rem 0.8rem !important;
+}
+.stTextInput input:focus, .stTextArea textarea:focus {
+    border-color: var(--gold) !important;
+    box-shadow: 0 0 0 3px rgba(201, 168, 76, 0.08) !important;
+    outline: none !important;
+}
+.stTextInput input::placeholder, .stTextArea textarea::placeholder {
+    color: var(--text-muted) !important;
+    font-style: italic !important;
+}
+label {
+    color: var(--text-secondary) !important;
+    font-family: 'Inter', sans-serif !important;
+    font-size: 0.8rem !important;
+    font-weight: 500 !important;
+    letter-spacing: 0.02em !important;
+}
+
+/* ── Buttons — clean press effect ────────────── */
+.stButton > button {
+    background: linear-gradient(180deg, var(--bg-surface), var(--bg-elevated)) !important;
+    border: 1px solid var(--border-medium) !important;
+    color: var(--gold) !important;
+    font-family: 'Inter', sans-serif !important;
+    font-size: 0.9rem !important;
+    font-weight: 500 !important;
+    border-radius: var(--radius-sm) !important;
+    padding: 0.55rem 1.5rem !important;
+    transition: var(--transition) !important;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.2) !important;
+    letter-spacing: 0.01em;
+}
+.stButton > button:hover {
+    background: linear-gradient(180deg, var(--bg-surface), var(--bg-secondary)) !important;
+    border-color: var(--gold) !important;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.3), 0 0 0 1px var(--border-medium) !important;
+    color: var(--gold-light) !important;
+    transform: translateY(-1px) !important;
 }
 .stButton > button:active {
-    transform: translateY(2px) !important;
-    box-shadow: 0 2px 5px rgba(0,0,0,0.8), inset 0 2px 5px rgba(0,0,0,0.5) !important;
+    transform: translateY(0) !important;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.3), inset 0 1px 3px rgba(0,0,0,0.2) !important;
 }
 
-/* Quill Spinner */
-@keyframes quill-write {
-    0% { transform: translate(0, 0) rotate(0deg); }
-    25% { transform: translate(10px, -5px) rotate(10deg); }
-    50% { transform: translate(20px, 0) rotate(-5deg); }
-    75% { transform: translate(30px, -5px) rotate(15deg); }
-    100% { transform: translate(40px, 0) rotate(0deg); opacity: 0; }
+/* Google button style */
+.google-btn {
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 10px !important;
+    justify-content: center !important;
+    width: 100% !important;
 }
-[data-testid="stSpinner"] > div { display: none !important; }
-[data-testid="stSpinner"]::before {
-    content: '';
-    display: inline-block;
-    width: 24px; height: 24px;
-    background-image: url('data:image/svg+xml;utf8,<svg fill="%23c9a84c" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M20.7,3.3c-0.4-0.4-1.1-0.4-1.5,0c-0.5,0.5-2.2,2.4-3.5,4.9c-2.3,4.4-1.9,8.5-1.9,8.6c0,0.2,0.1,0.4,0.3,0.5c0.1,0.1,0.3,0.1,0.4,0.1c0.1,0,0.2,0,0.3-0.1c0.1-0.1,4.2-2.1,6.5-7C23.1,6.9,21.5,3.9,20.7,3.3z M15,18.8c0.1-0.9,0.3-1.9,0.7-2.9L8.4,23.3l-2.7-0.7L5,19.9l7.3-7.3c-1.1,0.5-2.2,1.2-3.1,2.1L8.5,14L7,12.5l0.7-0.7c1-1,2.2-1.7,3.4-2.1L3.8,2.4L4.5,1L7.2,1.7l7.4,7.4c0-0.1,0.1-0.2,0.1-0.3l1.8,1.8C16.8,11.8,17,13.2,15,18.8z"/></svg>');
-    background-size: contain;
-    background-repeat: no-repeat;
-    animation: quill-write 1.5s infinite;
-    margin-right: 15px;
+
+/* ── Spinner override ────────────────────────── */
+@keyframes ink-flow {
+    0%   { opacity: 0.3; transform: scale(0.95); }
+    50%  { opacity: 1;   transform: scale(1.05); }
+    100% { opacity: 0.3; transform: scale(0.95); }
 }
-.stAlert { background: #161214 !important; border-color: #3a2e22 !important; color: #e2d8c3 !important; }
+[data-testid="stSpinner"] {
+    color: var(--gold) !important;
+}
+
+/* ── Tabs — Notion-style ─────────────────────── */
+.stTabs [data-baseweb="tab-list"] {
+    gap: 0;
+    border-bottom: 1px solid var(--border-subtle);
+}
+.stTabs [data-baseweb="tab"] {
+    font-family: 'Inter', sans-serif !important;
+    font-size: 0.85rem !important;
+    font-weight: 500;
+    color: var(--text-muted) !important;
+    padding: 0.6rem 1.2rem;
+    border-bottom: 2px solid transparent;
+    background: transparent !important;
+}
+.stTabs [aria-selected="true"] {
+    color: var(--gold) !important;
+    border-bottom-color: var(--gold) !important;
+    background: transparent !important;
+}
+.stTabs [data-baseweb="tab-highlight"] {
+    background-color: var(--gold) !important;
+}
+
+/* ── Streamlit overrides ─────────────────────── */
+.stAlert { background: var(--bg-elevated) !important; border-color: var(--border-subtle) !important; color: var(--text-primary) !important; border-radius: var(--radius-sm) !important; }
+[data-testid="stExpander"] { background: var(--bg-elevated) !important; border: 1px solid var(--border-subtle) !important; border-radius: var(--radius-md) !important; }
+[data-testid="stExpander"]:hover { border-color: var(--border-medium) !important; }
+.stCheckbox label span { color: var(--text-secondary) !important; font-family: 'Inter', sans-serif !important; font-size: 0.85rem !important; }
+[data-testid="stStatusWidget"] { background: var(--bg-elevated) !important; border: 1px solid var(--border-subtle) !important; border-radius: var(--radius-md) !important; }
 #MainMenu, footer, .stDeployButton { display: none; }
+
+/* ── Empty state ─────────────────────────────── */
+.empty-state {
+    text-align: center;
+    padding: 3rem 1rem;
+    color: var(--text-muted);
+}
+.empty-state-icon {
+    width: 56px;
+    height: 56px;
+    margin: 0 auto 1rem auto;
+    border-radius: 50%;
+    background: var(--gold-faint);
+    border: 1px dashed var(--border-subtle);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--gold-dim);
+}
+.empty-state p {
+    color: var(--text-muted) !important;
+    font-style: italic;
+    max-width: 380px;
+    margin: 0 auto;
+}
+
+/* ── Genesis card ────────────────────────────── */
+.genesis-card {
+    max-width: 560px;
+    margin: 2rem auto;
+    background: var(--bg-elevated);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-lg);
+    padding: 2.5rem;
+    box-shadow: var(--shadow-deep);
+}
+.genesis-card::before {
+    content: '';
+    display: block;
+    width: 48px;
+    height: 48px;
+    margin: 0 auto 1.5rem auto;
+    border-radius: 50%;
+    background: var(--gold-faint);
+    border: 1px solid var(--border-subtle);
+}
+
+/* ── Responsive polish ───────────────────────── */
+@media (max-width: 780px) {
+    .book-container { flex-direction: column; margin: 1.5rem auto; }
+    .page-left, .page-right { transform: none !important; border-radius: var(--radius-md) !important; }
+    .page-left { border-right: 1px solid var(--border-subtle) !important; border-bottom: none; }
+    .page-left::after { display: none; }
+    .page-header h2 { font-size: 1.4rem !important; }
+    .prophecy-box { padding: 2rem 1.5rem; }
+}
 </style>
 
-<!-- Canvas for Embers -->
-<canvas id="ember-bg" style="position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; pointer-events: none; z-index: -1;"></canvas>
+<!-- Ambient floating particles — subtle gold motes -->
+<canvas id="ember-bg" style="position:fixed;inset:0;width:100vw;height:100vh;pointer-events:none;z-index:-1;"></canvas>
 <script>
 (function() {
-    const canvas = document.getElementById('ember-bg');
-    if(!canvas) return;
-    const ctx = canvas.getContext('2d');
-    let width, height;
-    function resize() {
-        width = canvas.width = window.innerWidth;
-        height = canvas.height = window.innerHeight;
-    }
-    window.addEventListener('resize', resize);
+    const c = document.getElementById('ember-bg');
+    if (!c) return;
+    const ctx = c.getContext('2d');
+    let W, H;
+
+    function resize() { W = c.width = innerWidth; H = c.height = innerHeight; }
+    addEventListener('resize', resize);
     resize();
-    const embers = [];
-    for(let i=0; i<80; i++) {
-        embers.push({
-            x: Math.random() * width,
-            y: Math.random() * height,
-            size: Math.random() * 2 + 0.5,
-            speedY: Math.random() * 1 + 0.5,
-            speedX: (Math.random() - 0.5) * 0.5,
-            opacity: Math.random() * 0.5 + 0.1
-        });
-    }
-    function draw() {
-        ctx.clearRect(0, 0, width, height);
-        embers.forEach(e => {
-            e.y -= e.speedY;
-            e.x += e.speedX;
-            if(e.y < -10) { e.y = height + 10; e.x = Math.random() * width; }
-            ctx.fillStyle = `rgba(201, 168, 76, ${e.opacity})`;
+
+    // Fewer, subtler particles for a refined look
+    const pts = Array.from({length: 45}, () => ({
+        x: Math.random() * W,
+        y: Math.random() * H,
+        r: Math.random() * 1.5 + 0.4,
+        vy: Math.random() * 0.4 + 0.15,
+        vx: (Math.random() - 0.5) * 0.25,
+        a: Math.random() * 0.25 + 0.05
+    }));
+
+    (function draw() {
+        ctx.clearRect(0, 0, W, H);
+        for (const p of pts) {
+            p.y -= p.vy;
+            p.x += p.vx;
+            if (p.y < -10) { p.y = H + 10; p.x = Math.random() * W; }
+            // Soft glow
             ctx.beginPath();
-            ctx.arc(e.x, e.y, e.size, 0, Math.PI * 2);
+            const g = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, p.r * 3);
+            g.addColorStop(0, `rgba(201,168,76,${p.a})`);
+            g.addColorStop(1, 'rgba(201,168,76,0)');
+            ctx.fillStyle = g;
+            ctx.arc(p.x, p.y, p.r * 3, 0, Math.PI * 2);
             ctx.fill();
-        });
+        }
         requestAnimationFrame(draw);
-    }
-    draw();
+    })();
 })();
 </script>
 """, unsafe_allow_html=True)
 
-# Inject 3D Mousemove script via st.components.v1
-import streamlit.components.v1 as components
+# 3D tilt effect on cards via mousemove
 components.html("""
 <script>
-document.addEventListener("mousemove", (e) => {
+document.addEventListener("mousemove", e => {
     const cards = window.parent.document.querySelectorAll('.card-3d');
     cards.forEach(card => {
-        const rect = card.getBoundingClientRect();
-        const x = e.clientX - rect.left - rect.width/2;
-        const y = e.clientY - rect.top - rect.height/2;
-        const rotateX = -y / 20;
-        const rotateY = x / 20;
-        card.style.transform = `rotateX(${rotateX}deg) rotateY(${rotateY}deg) translateY(-4px)`;
+        const r = card.getBoundingClientRect();
+        const cx = e.clientX - r.left - r.width/2;
+        const cy = e.clientY - r.top - r.height/2;
+        card.style.transform = `rotateX(${-cy/25}deg) rotateY(${cx/25}deg) translateY(-3px)`;
     });
 });
-document.addEventListener("mouseout", () => {
+document.addEventListener("mouseleave", () => {
     const cards = window.parent.document.querySelectorAll('.card-3d');
-    cards.forEach(card => { card.style.transform = 'rotateX(0) rotateY(0) translateY(0)'; });
+    cards.forEach(c => { c.style.transform = 'none'; });
 });
 </script>
 """, height=0)
 
 
-
-# ── Supabase client factory ───────────────────────────────────────────────────
+# ─── Supabase Client ─────────────────────────────────────────────────────────
 
 @st.cache_resource
 def get_base_client() -> Client:
-    """Unauthenticated client — used only for auth operations (sign in / sign up)."""
+    """Unauthenticated Supabase client for auth flows only."""
     return create_client(st.secrets["SUPABASE_URL"], st.secrets["SUPABASE_KEY"])
 
 
 def get_authed_client(access_token: str, refresh_token: str) -> Client:
-    """
-    Returns a Supabase client with the user's session attached.
-    All DB calls through this client will respect RLS and scope to this user.
-    """
+    """Supabase client scoped to the user's session (respects RLS)."""
     client = create_client(st.secrets["SUPABASE_URL"], st.secrets["SUPABASE_KEY"])
     client.auth.set_session(access_token, refresh_token)
     return client
 
 
-# ── Session helpers ───────────────────────────────────────────────────────────
+# ─── Session Helpers ──────────────────────────────────────────────────────────
 
 def is_logged_in() -> bool:
-    return "access_token" in st.session_state and st.session_state.access_token is not None
+    return st.session_state.get("access_token") is not None
 
 
 def current_client() -> Client:
@@ -379,23 +926,18 @@ def store_session(session):
 
 
 def clear_session():
-    for key in ["access_token", "refresh_token", "user_id", "user_email"]:
-        st.session_state.pop(key, None)
+    for k in ["access_token", "refresh_token", "user_id", "user_email"]:
+        st.session_state.pop(k, None)
 
 
-# ── OAuth callback handler ────────────────────────────────────────────────────
+# ─── OAuth Callback ──────────────────────────────────────────────────────────
 
 def handle_oauth_callback():
-    """
-    After Google OAuth, Supabase redirects to your app with ?code=...
-    We detect it here and exchange it for a session.
-    """
-    params = st.query_params
-    code = params.get("code")
+    """Exchange ?code= param from Supabase OAuth redirect into a session."""
+    code = st.query_params.get("code")
     if code and not is_logged_in():
         try:
-            client = get_base_client()
-            res = client.auth.exchange_code_for_session({"auth_code": code})
+            res = get_base_client().auth.exchange_code_for_session({"auth_code": code})
             if res.session:
                 store_session(res.session)
                 st.query_params.clear()
@@ -404,20 +946,20 @@ def handle_oauth_callback():
             st.error(f"OAuth error: {e}")
 
 
-# ── Auth Pages ────────────────────────────────────────────────────────────────
+# ─── Auth Pages ───────────────────────────────────────────────────────────────
 
 def auth_page():
     handle_oauth_callback()
     if is_logged_in():
         return
 
-    st.markdown('''
+    st.markdown(f'''
     <div class="auth-wrapper">
         <div class="rune-bg"></div>
         <div class="auth-card">
+            <div style="text-align:center;margin-bottom:1rem;">{icon("globe", "#c9a84c", 32)}</div>
             <div class="auth-title">Life as Lore</div>
             <div class="auth-sub">Every life is an epic. Yours begins here.</div>
-            <div class="ornament">✦ ✦ ✦</div>
     ''', unsafe_allow_html=True)
 
     tab_login, tab_signup = st.tabs(["Sign In", "Create Account"])
@@ -442,16 +984,14 @@ def _login_form():
             st.error("Fill in both fields.")
             return
         try:
-            client = get_base_client()
-            res = client.auth.sign_in_with_password({"email": email, "password": password})
+            res = get_base_client().auth.sign_in_with_password({"email": email, "password": password})
             store_session(res.session)
             st.rerun()
-        except Exception as e:
+        except Exception:
             st.error("Incorrect email or password.")
 
-    # Google OAuth
     st.markdown('<div class="auth-divider">or</div>', unsafe_allow_html=True)
-    if st.button("Continue with Google"):
+    if st.button("Continue with Google", key="google_login"):
         _start_google_oauth()
 
 
@@ -473,14 +1013,11 @@ def _signup_form():
             st.error("Password must be at least 6 characters.")
             return
         try:
-            client = get_base_client()
-            res = client.auth.sign_up({"email": email, "password": password})
+            res = get_base_client().auth.sign_up({"email": email, "password": password})
             if res.session:
-                # Email confirmation disabled in Supabase → immediate session
                 store_session(res.session)
                 st.rerun()
             else:
-                # Email confirmation enabled → tell user to check inbox
                 st.success("Account created! Check your email to confirm, then sign in.")
         except Exception as e:
             st.error(f"Could not create account: {e}")
@@ -491,57 +1028,83 @@ def _signup_form():
 
 
 def _start_google_oauth():
-    """
-    Kicks off the Google OAuth flow.
-    The redirect_to URL must be whitelisted in:
-    Supabase dashboard → Authentication → URL Configuration → Redirect URLs
-    """
+    """Redirect browser to Google OAuth via Supabase."""
     try:
-        client = get_base_client()
-        # On Streamlit Cloud your URL is https://<your-app>.streamlit.app
-        # Change this if you use a custom domain
         app_url = st.secrets.get("APP_URL", "http://localhost:8501")
-        res = client.auth.sign_in_with_oauth({
+        res = get_base_client().auth.sign_in_with_oauth({
             "provider": "google",
             "options": {"redirect_to": app_url},
         })
-        # Redirect the browser to Google
         st.markdown(f'<meta http-equiv="refresh" content="0; url={res.url}">', unsafe_allow_html=True)
         st.stop()
     except Exception as e:
         st.error(f"Could not start Google sign-in: {e}")
 
 
-# ── Helpers ───────────────────────────────────────────────────────────────────
+# ─── Rendering Helpers ────────────────────────────────────────────────────────
+
+def render_page_header(icon_name: str, title: str, subtitle: str = ""):
+    """Notion-style page header with icon badge and subtitle."""
+    st.markdown(f'''
+    <div class="page-header">
+        <div class="page-header-icon">{icon(icon_name, "#c9a84c", 22)}</div>
+        <h2>{title}</h2>
+    </div>
+    {"<p class='page-subtitle'>" + subtitle + "</p>" if subtitle else ""}
+    ''', unsafe_allow_html=True)
+
+
+def render_divider():
+    st.markdown(f'<div class="lore-divider">{icon("sparkle", "#8c764c", 10)}</div>', unsafe_allow_html=True)
+
+
+def render_empty(icon_name: str, text: str):
+    """Empty-state placeholder with icon and message."""
+    st.markdown(f'''
+    <div class="empty-state">
+        <div class="empty-state-icon">{icon(icon_name, "#8c764c", 24)}</div>
+        <p>{text}</p>
+    </div>
+    ''', unsafe_allow_html=True)
+
+
+def render_section_label(label: str):
+    st.markdown(f'''
+    <div class="section-label">
+        {label}
+        <span class="section-label-line"></span>
+    </div>
+    ''', unsafe_allow_html=True)
+
 
 def render_chapter(chapter: dict):
+    """Display a chapter in the 3D open-book layout."""
     season_html = f'<div class="chapter-season">{chapter["season"]}</div>' if chapter.get("season") else ""
     paragraphs = chapter["body"].strip().split("\n\n")
     body_html = "".join(f"<p>{p.strip()}</p>" for p in paragraphs if p.strip())
-    
+
     st.markdown(f"""
     <div class="book-container">
         <div class="page-left">
             <div class="chapter-num">Chapter {chapter["chapter_num"]}</div>
             <div class="chapter-title">{chapter["title"]}</div>
             {season_html}
-            <div class="ornament">✦ ✦ ✦</div>
+            <div class="lore-divider" style="margin:1rem 0">{icon("sparkle", "#8c764c", 8)}</div>
         </div>
         <div class="page-right">
-            <div class="chapter-body">
-                {body_html}
-            </div>
-            <div class="ornament" style="font-size: 1rem; margin-top:3rem;">— ✦ —</div>
+            <div class="chapter-body">{body_html}</div>
         </div>
     </div>
     """, unsafe_allow_html=True)
 
 
-def lore_card(title: str, subtitle: str, desc: str):
+def lore_card(title: str, subtitle: str, desc: str, icon_name: str = "shield"):
+    """Glassmorphism character card with 3D tilt and icon badge."""
     st.markdown(f"""
     <div class="card-3d-wrapper">
         <div class="card-3d">
-            <div class="card-3d-title char-glow">{title}</div>
+            <div class="card-3d-icon">{icon(icon_name, "#c9a84c", 18)}</div>
+            <div class="card-3d-title">{title}</div>
             <div class="card-3d-sub">{subtitle}</div>
             <div class="card-3d-desc">{desc}</div>
         </div>
@@ -549,18 +1112,32 @@ def lore_card(title: str, subtitle: str, desc: str):
     """, unsafe_allow_html=True)
 
 
-# ── Genesis (first-time setup per user) ──────────────────────────────────────
+def render_quest_block(q: dict, status_class: str, status_label: str, status_icon: str):
+    """Notion-style quest block with chip badge."""
+    desc = q.get("description") or q.get("resolution") or ""
+    st.markdown(f"""
+    <div class="quest-block">
+        <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;">
+            <div class="quest-block-title">{q.get("lore_title", q.get("title", ""))}</div>
+            <span class="quest-chip {status_class}">{icon(status_icon, "currentColor", 12)} {status_label}</span>
+        </div>
+        {"<div class='quest-block-desc'>" + desc + "</div>" if desc else ""}
+        <div class="quest-block-real">{q.get("title", "")}</div>
+    </div>
+    """, unsafe_allow_html=True)
+
+
+# ─── Genesis (First-Time Setup) ──────────────────────────────────────────────
 
 def genesis_page(client: Client, user_id: str):
     st.markdown('<div class="app-title">Life as Lore</div>', unsafe_allow_html=True)
-    st.markdown('<p style="text-align:center;color:#b8a98a;font-style:italic;font-family:\'Crimson Pro\',serif;font-size:1.2rem;">Your world is waiting to be named.</p>', unsafe_allow_html=True)
-    st.markdown('<div class="ornament">✦ ✦ ✦</div>', unsafe_allow_html=True)
+    st.markdown('<p class="app-subtitle">Your world is waiting to be named.</p>', unsafe_allow_html=True)
 
     with st.form("genesis"):
         real_name = st.text_input("Your name", placeholder="What do people call you?")
         intro = st.text_area(
             "Tell me about yourself",
-            placeholder="Where are you in life right now? What are you working on, struggling with, hoping for? A few sentences is enough.",
+            placeholder="Where are you in life right now? What are you working on, struggling with, hoping for?",
             height=120,
         )
         submitted = st.form_submit_button("Begin the Chronicle")
@@ -573,25 +1150,40 @@ def genesis_page(client: Client, user_id: str):
         st.rerun()
 
 
-# ── Sidebar ───────────────────────────────────────────────────────────────────
+# ─── Sidebar ──────────────────────────────────────────────────────────────────
 
 def sidebar(world: dict) -> str:
     with st.sidebar:
-        st.markdown(f"### {world['world_name']}")
-        st.markdown(f"*{world['hero_name']}*")
-        if world.get("current_era"):
-            st.markdown(f"**{world['current_era']}**")
-        st.markdown(f"📖 {world['total_chapters']} chapters written")
-        st.divider()
+        # World identity block
+        st.markdown(f"""
+        <div class="sidebar-world">
+            <div class="sidebar-world-name">{world["world_name"]}</div>
+            <div class="sidebar-hero">{world["hero_name"]}</div>
+            {"<div class='sidebar-era'>" + icon("compass", "#8c764c", 12) + " " + world["current_era"] + "</div>" if world.get("current_era") else ""}
+            <div class="sidebar-stat">
+                {icon("book", "#a8a29e", 15)}
+                <span><span class="sidebar-stat-num">{world["total_chapters"]}</span> chapters written</span>
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
 
         page = st.radio(
             "Navigate",
-            ["📜 Narrate", "📖 Chronicle", "🧙 Characters", "⚔️ Quests", "🔮 Prophecy"],
+            ["Narrate", "Chronicle", "Characters", "Quests", "Prophecy"],
+            format_func=lambda x: {
+                "Narrate":    "✎  Narrate",
+                "Chronicle":  "◉  Chronicle",
+                "Characters": "⚇  Characters",
+                "Quests":     "⚔  Quests",
+                "Prophecy":   "◈  Prophecy",
+            }.get(x, x),
             label_visibility="collapsed",
         )
 
         st.divider()
-        st.caption(st.session_state.get("user_email", ""))
+
+        # User footer
+        st.markdown(f'<div class="sidebar-email">{st.session_state.get("user_email", "")}</div>', unsafe_allow_html=True)
         if st.button("Sign Out"):
             try:
                 get_base_client().auth.sign_out()
@@ -603,11 +1195,11 @@ def sidebar(world: dict) -> str:
         return page
 
 
-# ── Page: Narrate ─────────────────────────────────────────────────────────────
+# ─── Page: Narrate ────────────────────────────────────────────────────────────
 
 def page_narrate(client: Client, user_id: str, world: dict):
-    st.markdown("## Speak Your Truth")
-    st.markdown("*What has been happening in your life? Speak freely — the mundane and the momentous alike.*")
+    render_page_header("quill", "Speak Your Truth",
+                       "What has been happening in your life? Speak freely — the mundane and the momentous alike.")
 
     with st.form("narrate_form"):
         entry_text = st.text_area(
@@ -630,7 +1222,7 @@ def page_narrate(client: Client, user_id: str, world: dict):
             for c in new_chars:
                 db.upsert_character(client, user_id, c["real_name"], c["lore_name"], c["archetype"], c["description"])
 
-            st.write("Updating the quests...")
+            st.write("Updating quests...")
             existing_quests = db.get_active_quests(client)
             new_quests = agents.extract_quests(entry_text, existing_quests)
             for q in new_quests:
@@ -645,62 +1237,77 @@ def page_narrate(client: Client, user_id: str, world: dict):
                 entry_text, world["hero_name"], world["world_name"],
                 world.get("current_era", ""), all_chars, all_quests, recent,
             )
-            db.save_chapter(client, user_id, entry["id"], chapter_data["title"], chapter_data["body"], chapter_data["season"])
+            db.save_chapter(client, user_id, entry["id"],
+                            chapter_data["title"], chapter_data["body"], chapter_data["season"])
 
             if chapter_data.get("season"):
                 db.update_world_state(client, {"current_era": chapter_data["season"]})
 
             status.update(label="The chapter is written.", state="complete")
 
-        st.markdown('<div class="ornament">✦ ✦ ✦</div>', unsafe_allow_html=True)
+        render_divider()
         render_chapter({**chapter_data, "chapter_num": world["total_chapters"] + 1})
 
 
-# ── Page: Chronicle ───────────────────────────────────────────────────────────
+# ─── Page: Chronicle ─────────────────────────────────────────────────────────
 
 def page_chronicle(client: Client):
-    st.markdown("## The Chronicle")
+    render_page_header("book", "The Chronicle", "Every chapter of your unfolding story, bound in one place.")
     chapters = db.get_all_chapters(client)
 
     if not chapters:
-        st.markdown("*The pages are blank. Narrate your first entry to begin the chronicle.*")
+        render_empty("scroll", "The pages are blank. Narrate your first entry to begin the chronicle.")
         return
 
     show_all = st.checkbox("Show all chapters", value=False)
-    display  = chapters if show_all else chapters[-3:]
+    display = chapters if show_all else chapters[-3:]
 
     for ch in reversed(display):
         render_chapter(ch)
 
 
-# ── Page: Characters ──────────────────────────────────────────────────────────
+# ─── Page: Characters ────────────────────────────────────────────────────────
+
+ARCHETYPE_ICONS = {
+    "the loyal companion": "shield",
+    "the mentor": "crown",
+    "the trickster": "flame",
+    "the rival": "sword",
+    "the oracle": "crystal",
+    "the muse": "eye",
+}
 
 def page_characters(client: Client):
-    st.markdown("## Characters of the World")
+    render_page_header("users", "Characters of the World",
+                       "The souls who walk beside you, rendered in the language of myth.")
     chars = db.get_all_characters(client)
 
     if not chars:
-        st.markdown("*No characters have emerged yet. Narrate your life to let them appear.*")
+        render_empty("users", "No characters have emerged yet. Narrate your life to let them appear.")
         return
 
     cols = st.columns(2)
     for i, c in enumerate(chars):
         with cols[i % 2]:
+            archetype_lower = c.get("archetype", "").lower()
+            card_icon = ARCHETYPE_ICONS.get(archetype_lower, "shield")
             lore_card(
                 c["lore_name"],
-                f"{c['archetype']}  ·  known as {c['real_name']}",
+                f'{c["archetype"]}  ·  known as {c["real_name"]}',
                 c.get("description", ""),
+                icon_name=card_icon,
             )
 
 
-# ── Page: Quests ──────────────────────────────────────────────────────────────
+# ─── Page: Quests ─────────────────────────────────────────────────────────────
 
 def page_quests(client: Client):
-    st.markdown("## The Book of Quests")
+    render_page_header("sword", "The Book of Quests",
+                       "Your goals and struggles, elevated to the stature they deserve.")
     quests = db.get_all_quests(client)
 
     if not quests:
-        st.markdown("*No quests have been recorded. Mention your goals and struggles when you narrate.*")
+        render_empty("sword", "No quests have been recorded. Mention your goals and struggles when you narrate.")
         return
 
     active = [q for q in quests if q["status"] == "active"]
@@ -708,46 +1315,42 @@ def page_quests(client: Client):
     lost   = [q for q in quests if q["status"] == "abandoned"]
 
     if active:
-        st.markdown("#### Active Quests")
+        render_section_label(f"Active  ·  {len(active)}")
         for q in active:
-            with st.expander(q["lore_title"]):
-                st.markdown('<span class="badge-active">⚔ ONGOING</span>', unsafe_allow_html=True)
-                st.markdown(f"*{q.get('description', '')}*")
-                st.caption(f"Real goal: {q['title']}")
+            render_quest_block(q, "quest-active", "Ongoing", "flame")
 
     if done:
-        st.markdown("#### Completed")
+        render_section_label(f"Completed  ·  {len(done)}")
         for q in done:
-            with st.expander(q["lore_title"]):
-                st.markdown('<span class="badge-done">✦ COMPLETED</span>', unsafe_allow_html=True)
-                if q.get("resolution"):
-                    st.markdown(f"*{q['resolution']}*")
+            render_quest_block(q, "quest-done", "Completed", "check")
 
     if lost:
-        st.markdown("#### Abandoned")
+        render_section_label(f"Abandoned  ·  {len(lost)}")
         for q in lost:
-            with st.expander(q["lore_title"]):
-                st.markdown('<span class="badge-abandoned">— ABANDONED</span>', unsafe_allow_html=True)
+            render_quest_block(q, "quest-abandoned", "Abandoned", "x_mark")
 
 
-# ── Page: Prophecy ────────────────────────────────────────────────────────────
+# ─── Page: Prophecy ──────────────────────────────────────────────────────────
 
 def page_prophecy(client: Client, world: dict):
-    st.markdown("## The Prophecy")
-    st.markdown("*Read the arc of your story so far. Let the oracle speak.*")
+    render_page_header("crystal", "The Prophecy",
+                       "Let the oracle read the arc of your story and speak of what lies ahead.")
 
     if world["total_chapters"] < 3:
-        st.markdown("*The oracle needs more chapters to read. Write at least three entries first.*")
+        render_empty("eye", "The oracle needs more chapters to read. Write at least three entries first.")
         return
 
     existing_prophecy = world.get("prophecy")
     if existing_prophecy:
-        st.markdown('<div class="prophecy-box">', unsafe_allow_html=True)
-        st.markdown(f'<div class="prophecy-text">{existing_prophecy}</div>', unsafe_allow_html=True)
-        st.markdown('</div>', unsafe_allow_html=True)
-        st.markdown("")
+        st.markdown(f'''
+        <div class="prophecy-box">
+            <div class="prophecy-icon">{icon("crystal", "#c9a84c", 24)}</div>
+            <div class="prophecy-text">{existing_prophecy}</div>
+        </div>
+        ''', unsafe_allow_html=True)
 
-    if st.button("Consult the Oracle" if not existing_prophecy else "Read the Omens Again"):
+    btn_label = "Consult the Oracle" if not existing_prophecy else "Read the Omens Again"
+    if st.button(btn_label):
         with st.spinner("The oracle considers your arc..."):
             chapters = db.get_all_chapters(client)
             quests   = db.get_all_quests(client)
@@ -760,18 +1363,20 @@ def page_prophecy(client: Client, world: dict):
             updates["current_era"] = new_era
         db.update_world_state(client, updates)
 
-        st.markdown('<div class="prophecy-box">', unsafe_allow_html=True)
-        st.markdown(f'<div class="prophecy-text">{prophecy}</div>', unsafe_allow_html=True)
-        st.markdown('</div>', unsafe_allow_html=True)
+        st.markdown(f'''
+        <div class="prophecy-box">
+            <div class="prophecy-icon">{icon("crystal", "#c9a84c", 24)}</div>
+            <div class="prophecy-text">{prophecy}</div>
+        </div>
+        ''', unsafe_allow_html=True)
         if new_era and new_era.lower() != "null":
             st.caption(f"The era shifts: *{new_era}*")
         st.rerun()
 
 
-# ── Main Router ───────────────────────────────────────────────────────────────
+# ─── Main Router ──────────────────────────────────────────────────────────────
 
 def main():
-    # Handle Google OAuth callback before anything else
     handle_oauth_callback()
 
     if not is_logged_in():

@@ -1050,7 +1050,11 @@ def _start_google_oauth():
             "provider": "google",
             "options": {"redirect_to": app_url},
         })
-        st.markdown(f'<meta http-equiv="refresh" content="0; url={res.url}">', unsafe_allow_html=True)
+        # Break out of the Streamlit Cloud iframe to prevent Google's clickjacking 403 error
+        st.components.v1.html(
+            f'<script>window.top.location.href = "{res.url}";</script>',
+            height=0
+        )
         st.stop()
     except Exception as e:
         st.error(f"Could not start Google sign-in: {e}")

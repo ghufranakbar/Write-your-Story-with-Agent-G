@@ -712,31 +712,28 @@ p, li, div {{
     border-top: 1px solid var(--brd-1);
 }}
 .auth-footer .stButton > button {{
-    background: var(--bg-2) !important;
-    border: 1px solid var(--brd-2) !important;
-    color: var(--tx-1) !important;
-    font-family: 'Inter', sans-serif !important;
-    font-size: 0.78rem !important;
-    font-weight: 500 !important;
-    border-radius: 8px !important;
-    padding: 0.45rem 1rem !important;
-    width: 100% !important;
-    display: flex !important;
-    align-items: center !important;
-    justify-content: center !important;
-    gap: 6px !important;
-    cursor: pointer !important;
-}}
-.auth-footer .stButton > button:hover {{
-    background: var(--accent-bg) !important;
-    border-color: var(--accent) !important;
-    color: var(--accent) !important;
-    transform: none !important;
-}}
-
-/* ── Form Inputs ─────────────────────────────── */
-.stTextInput input, .stTextArea textarea {{
-    background: var(--input-bg) !important;
+      background: transparent !important;
+      border: 1px solid rgba(130, 110, 70, 0.4) !important;
+      color: #d8c8a8 !important;
+      font-family: 'Inter', sans-serif !important;
+      font-size: 0.88rem !important;
+      font-weight: 500 !important;
+      border-radius: 8px !important;
+      padding: 10px 16px !important;
+      height: 40px !important;
+      width: 100% !important;
+      display: flex !important;
+      align-items: center !important;
+      justify-content: center !important;
+      gap: 6px !important;
+      cursor: pointer !important;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.04) !important;
+      transition: all 0.2s;
+  }}
+  .auth-footer .stButton > button:hover {{
+      background: rgba(60, 60, 65, 0.2) !important;
+      border-color: rgba(180, 160, 110, 0.6) !important;
+      color: #d8c8a8 !important;
     border: 1px solid var(--brd-1) !important;
     color: var(--tx-0) !important;
     border-radius: var(--r-sm) !important;
